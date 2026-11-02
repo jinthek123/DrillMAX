@@ -3,7 +3,7 @@
 V-ARCHIVE `[미갱신]` 플레이까지 로컬에 기록하여 나의 현재 폼을 객관적으로 파악하도록 도와주는 Windows 앱입니다.  
 for DJMAX RESPECT V
 
-> 비공식 팬메이드 도구입니다. 본 사이트에 사용된 게임 콘텐츠의 저작권은 (주)네오위즈에 있습니다.
+> 비공식 팬메이드 도구입니다. 해당 프로그램에 사용된 게임 콘텐츠의 저작권은 (주)네오위즈에 있습니다.
 
 Electron 버전은 [`rhythmForm-electroVer`](https://github.com/jinthek123/rhythmForm-electroVer)에 있습니다. (근데 private임 ㅋㅋ)
 
