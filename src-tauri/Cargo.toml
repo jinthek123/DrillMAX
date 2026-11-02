@@ -1,6 +1,6 @@
 [package]
 name = "rhythmform"
-version = "0.1.1"
+version = "1.0.0"
 description = "RhythmForm — local V-ARCHIVE play tracker"
 authors = ["RhythmForm"]
 edition = "2021"
