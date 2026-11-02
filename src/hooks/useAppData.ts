@@ -213,6 +213,7 @@ export function useAppData() {
             chartId: chart.id,
             accuracy: item.accuracy,
             playedAt,
+            maxCombo: item.maxCombo || item.accuracy >= 100 || undefined,
             source: 'log',
             status: item.status,
           })
@@ -264,7 +265,7 @@ export function useAppData() {
       chartId = chart.id
 
       const playedAt = todayAt(ev.time)
-      const dup = plays.some(
+      const dupIdx = plays.findIndex(
         (p) =>
           p.chartId === chart!.id &&
           p.accuracy === ev.accuracy &&
@@ -272,7 +273,16 @@ export function useAppData() {
             new Date(p.playedAt).getTime() - new Date(playedAt).getTime(),
           ) < 2000,
       )
-      if (dup) {
+      if (dupIdx >= 0) {
+        // 나중에 MaxCombo 배너가 잡히면 기존 기록 업그레이드
+        if (ev.maxCombo && !plays[dupIdx].maxCombo) {
+          plays = plays.map((p, i) =>
+            i === dupIdx ? { ...p, maxCombo: true } : p,
+          )
+          play = plays[dupIdx]
+          setSelectedId(chart.id)
+          return { charts, plays }
+        }
         setSelectedId(chart.id)
         return prev
       }
@@ -282,6 +292,7 @@ export function useAppData() {
         chartId: chart.id,
         accuracy: ev.accuracy,
         playedAt,
+        maxCombo: ev.maxCombo || ev.accuracy >= 100 || undefined,
         source: 'live',
         status: ev.status,
       }

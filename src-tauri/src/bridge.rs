@@ -24,6 +24,14 @@ static PLAY_RE: Lazy<Regex> = Lazy::new(|| {
     .expect("play regex")
 });
 
+/// 캡쳐 결과 배너: `4B SC 99.72% (MaxCombo)` / `(PerfectPlay)` 등
+static FLAG_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(
+        r"(?i)(\dB)\s+(NM|HD|MX|SC)\s+(\d+(?:\.\d+)?)\s*%\s*\(\s*(Max\s*Combo|Perfect\s*Play|PP|MC)\s*\)",
+    )
+    .expect("flag regex")
+});
+
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayEvent {
@@ -35,6 +43,7 @@ pub struct PlayEvent {
     pub difficulty: String,
     pub title: String,
     pub accuracy: f64,
+    pub max_combo: bool,
     pub raw: String,
 }
 
@@ -47,6 +56,7 @@ struct SnapshotPlay {
     difficulty: String,
     title: String,
     accuracy: f64,
+    max_combo: bool,
     raw: String,
 }
 
@@ -101,19 +111,47 @@ fn strip_html(html: &str) -> String {
         .replace('\r', "")
 }
 
+/// (button, difficulty, accuracy*100 as i32) → max combo
+fn detect_max_combo_flags(text: &str) -> HashSet<(String, String, i32)> {
+    let mut out = HashSet::new();
+    for m in FLAG_RE.captures_iter(text) {
+        let Some(acc) = m.get(3).and_then(|g| g.as_str().parse::<f64>().ok()) else {
+            continue;
+        };
+        let key = (
+            m.get(1).unwrap().as_str().to_uppercase(),
+            m.get(2).unwrap().as_str().to_uppercase(),
+            (acc * 100.0).round() as i32,
+        );
+        out.insert(key);
+    }
+    out
+}
+
 fn parse_plays(text: &str) -> Vec<SnapshotPlay> {
+    let flags = detect_max_combo_flags(text);
     PLAY_RE
         .captures_iter(text)
         .filter_map(|m| {
             let accuracy = m.get(6)?.as_str().parse::<f64>().ok()?;
             let accuracy = (accuracy * 100.0).round() / 100.0;
+            let button = m.get(3)?.as_str().to_string();
+            let difficulty = m.get(4)?.as_str().to_string();
+            let acc_key = (accuracy * 100.0).round() as i32;
+            let flagged = flags.contains(&(
+                button.to_uppercase(),
+                difficulty.to_uppercase(),
+                acc_key,
+            ));
+            let max_combo = flagged || accuracy >= 100.0;
             Some(SnapshotPlay {
                 time: m.get(1)?.as_str().to_string(),
                 status: m.get(2)?.as_str().to_string(),
-                button: m.get(3)?.as_str().to_string(),
-                difficulty: m.get(4)?.as_str().to_string(),
+                button,
+                difficulty,
                 title: m.get(5)?.as_str().trim().to_string(),
                 accuracy,
+                max_combo,
                 raw: m.get(0)?.as_str().to_string(),
             })
         })
@@ -135,8 +173,14 @@ fn fingerprint(plays: &[SnapshotPlay]) -> String {
         .iter()
         .map(|p| {
             format!(
-                "{}|{}|{}|{}|{}|{}",
-                p.time, p.status, p.button, p.difficulty, p.title, p.accuracy
+                "{}|{}|{}|{}|{}|{}|{}",
+                p.time,
+                p.status,
+                p.button,
+                p.difficulty,
+                p.title,
+                p.accuracy,
+                if p.max_combo { 1 } else { 0 }
             )
         })
         .collect::<Vec<_>>()
@@ -234,8 +278,14 @@ async fn tick(state: &Shared) {
         .into_iter()
         .filter(|p| {
             let key = format!(
-                "{}|{}|{}|{}|{}|{}",
-                p.time, p.status, p.button, p.difficulty, p.title, p.accuracy
+                "{}|{}|{}|{}|{}|{}|{}",
+                p.time,
+                p.status,
+                p.button,
+                p.difficulty,
+                p.title,
+                p.accuracy,
+                if p.max_combo { 1 } else { 0 }
             );
             !prev.contains(&key)
         })
@@ -257,6 +307,7 @@ async fn tick(state: &Shared) {
             difficulty: p.difficulty,
             title: p.title,
             accuracy: p.accuracy,
+            max_combo: p.max_combo,
             raw: p.raw,
         });
     }

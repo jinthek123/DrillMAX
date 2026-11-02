@@ -5,6 +5,8 @@ export interface AppSettings {
   nickname: string
   setupDone: boolean
   theme: ThemeMode
+  /** 백업 JSON을 저장할 폴더 (Tauri) */
+  backupDir: string
 }
 
 const KEY = 'rhythmform-settings-v1'
@@ -14,6 +16,7 @@ const EMPTY: AppSettings = {
   nickname: '',
   setupDone: false,
   theme: 'dark',
+  backupDir: '',
 }
 
 export function loadSettings(): AppSettings {
@@ -27,6 +30,7 @@ export function loadSettings(): AppSettings {
       nickname: typeof parsed.nickname === 'string' ? parsed.nickname : '',
       setupDone: Boolean(parsed.setupDone && parsed.apiToken),
       theme,
+      backupDir: typeof parsed.backupDir === 'string' ? parsed.backupDir : '',
     }
   } catch {
     return { ...EMPTY }

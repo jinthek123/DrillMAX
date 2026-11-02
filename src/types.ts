@@ -38,6 +38,7 @@ export interface ParsedLogPlay {
   title: string
   accuracy: number
   status: '미갱신' | '성공'
+  maxCombo?: boolean
 }
 
 export interface LiveBridgeEvent {
@@ -49,5 +50,6 @@ export interface LiveBridgeEvent {
   difficulty: Difficulty
   title: string
   accuracy: number
+  maxCombo?: boolean
   raw: string
 }

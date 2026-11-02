@@ -27,6 +27,7 @@ interface SnapshotPlay {
   difficulty: Difficulty
   title: string
   accuracy: number
+  maxCombo?: boolean
   raw: string
 }
 
@@ -54,7 +55,11 @@ export function useLiveBridge({
     let cancelled = false
 
     function ingest(ev: LiveBridgeEvent, nickname: string | null) {
-      if (seenRef.current.has(ev.id)) return
+      if (seenRef.current.has(ev.id)) {
+        // MaxCombo 배너가 늦게 잡힌 경우 업그레이드만 재시도
+        if (ev.maxCombo) onEvent(ev)
+        return
+      }
       seenRef.current.add(ev.id)
       sinceRef.current = ev.at > sinceRef.current ? ev.at : sinceRef.current
       const chartId = onEvent(ev)
@@ -84,6 +89,7 @@ export function useLiveBridge({
             difficulty: p.difficulty,
             title: p.title,
             accuracy: p.accuracy,
+            maxCombo: p.maxCombo,
             raw: p.raw,
           },
           json.nickname,

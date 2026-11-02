@@ -6,6 +6,7 @@ import {
 } from './lib/archiveApi'
 import { AddChartModal } from './components/AddChartModal'
 import { ApiSetupModal } from './components/ApiSetupModal'
+import { BackupModal } from './components/BackupModal'
 import { ImportLogModal } from './components/ImportLogModal'
 import { LiveBadge } from './components/LiveBadge'
 import { PlayPanel } from './components/PlayPanel'
@@ -16,7 +17,7 @@ import {
   saveSettings,
   type ThemeMode,
 } from './lib/settings'
-import { downloadBackup } from './lib/backup'
+import { pickBackupDir, saveBackupToDir } from './lib/backup'
 import { useAppData } from './hooks/useAppData'
 import { resolveArchiveBest, useLiveBridge } from './hooks/useLiveBridge'
 import { useSongCatalog } from './hooks/useSongCatalog'
@@ -48,6 +49,9 @@ export default function App() {
   const [apiSetupOpen, setApiSetupOpen] = useState(() => !loadSettings().setupDone)
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [backupOpen, setBackupOpen] = useState(false)
+  const [backupBusy, setBackupBusy] = useState(false)
+  const [backupMsg, setBackupMsg] = useState<string | null>(null)
   const [liveEnabled, setLiveEnabled] = useState(true)
   const archiveBestsRef = useRef<ArchiveBestMap | null>(null)
 
@@ -193,9 +197,8 @@ export default function App() {
         onDeletePlay={deletePlay}
         onOpenImport={() => setImportOpen(true)}
         onExport={() => {
-          void downloadBackup(data).catch((e) => {
-            alert(e instanceof Error ? e.message : '백업 저장에 실패했습니다.')
-          })
+          setBackupMsg(null)
+          setBackupOpen(true)
         }}
         onImportJson={(file) => {
           const reader = new FileReader()
@@ -254,6 +257,62 @@ export default function App() {
           saveSettings(next)
           setSettings(next)
           setApiSetupOpen(false)
+        }}
+      />
+
+      <BackupModal
+        open={backupOpen}
+        backupDir={settings.backupDir}
+        busy={backupBusy}
+        message={backupMsg}
+        onClose={() => {
+          if (backupBusy) return
+          setBackupOpen(false)
+          setBackupMsg(null)
+        }}
+        onPickFolder={() => {
+          void (async () => {
+            try {
+              const dir = await pickBackupDir(settings.backupDir || undefined)
+              if (!dir) return
+              const next = { ...settings, backupDir: dir }
+              saveSettings(next)
+              setSettings(next)
+              setBackupMsg(`폴더 지정됨: ${dir}`)
+            } catch (e) {
+              setBackupMsg(
+                e instanceof Error ? e.message : '폴더를 선택하지 못했습니다.',
+              )
+            }
+          })()
+        }}
+        onConfirm={() => {
+          void (async () => {
+            setBackupBusy(true)
+            setBackupMsg(null)
+            try {
+              let dir = settings.backupDir
+              if (!dir) {
+                const picked = await pickBackupDir()
+                if (!picked) {
+                  setBackupMsg('백업 폴더를 먼저 선택하세요.')
+                  return
+                }
+                dir = picked
+                const next = { ...settings, backupDir: dir }
+                saveSettings(next)
+                setSettings(next)
+              }
+              const path = await saveBackupToDir(data, dir)
+              setBackupMsg(`저장됨: ${path}`)
+            } catch (e) {
+              setBackupMsg(
+                e instanceof Error ? e.message : '백업 저장에 실패했습니다.',
+              )
+            } finally {
+              setBackupBusy(false)
+            }
+          })()
         }}
       />
     </div>

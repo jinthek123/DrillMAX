@@ -24,6 +24,15 @@ export function parseVArchiveLog(text: string): ParsedLogPlay[] {
   const pattern =
     /\[(\d{2}:\d{2}:\d{2})\]\[(미갱신|성공)\](?:\[[^\]]*\])*(?:\([^)]*\))?\s*(\dB)\s+(NM|HD|MX|SC)\s+(.+?)\s*\((\d+(?:\.\d+)?)\s*%\)/u
 
+  /** 캡쳐 결과: `4B SC 99.72% (MaxCombo)` */
+  const flagRe =
+    /(\dB)\s+(NM|HD|MX|SC)\s+(\d+(?:\.\d+)?)\s*%\s*\(\s*(Max\s*Combo|Perfect\s*Play|PP|MC)\s*\)/gi
+  const mcFlags = new Set<string>()
+  for (const m of text.matchAll(flagRe)) {
+    const acc = Math.round(Number.parseFloat(m[3]) * 100) / 100
+    mcFlags.add(`${m[1].toUpperCase()}|${m[2].toUpperCase()}|${acc}`)
+  }
+
   for (const line of lines) {
     const m = line.match(pattern)
     if (!m) continue
@@ -32,16 +41,22 @@ export function parseVArchiveLog(text: string): ParsedLogPlay[] {
     if (!isButton(button) || !isDiff(difficulty)) continue
 
     const title = titleRaw.trim()
-    const accuracy = Number.parseFloat(acc)
+    const accuracy = Math.round(Number.parseFloat(acc) * 100) / 100
     if (!title || Number.isNaN(accuracy)) continue
+
+    const maxCombo =
+      accuracy >= 100 ||
+      mcFlags.has(`${button}|${difficulty}|${accuracy}`) ||
+      /\((?:Max\s*Combo|Perfect\s*Play|PP|MC)\)/i.test(line)
 
     results.push({
       time,
       button,
       difficulty,
       title,
-      accuracy: Math.round(accuracy * 100) / 100,
+      accuracy,
       status: status as '미갱신' | '성공',
+      maxCombo: maxCombo || undefined,
     })
   }
 

@@ -479,6 +479,22 @@
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
+.backup-path-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.backup-path-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.backup-path-row .btn-ghost {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .field-row {
   display: flex;
   gap: 12px;
