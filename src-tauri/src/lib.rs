@@ -11,6 +11,7 @@ pub fn run() {
                 let _ = w.unminimize();
             }
         }))
+        .plugin(tauri_plugin_http::init())
         .setup(|app| {
             let resource_dir = app
                 .path()

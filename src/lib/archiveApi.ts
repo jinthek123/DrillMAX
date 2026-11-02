@@ -1,4 +1,5 @@
-﻿import type { ButtonMode, Difficulty } from '../types'
+﻿import { fetch as tauriFetch } from '@tauri-apps/plugin-http'
+import type { ButtonMode, Difficulty } from '../types'
 
 export interface ArchiveRecord {
   name: string
@@ -6,6 +7,28 @@ export interface ArchiveRecord {
   score: number
   maxCombo?: boolean
   button?: number
+}
+
+function isTauri(): boolean {
+  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
+}
+
+/** 패키지된 Tauri에선 CORS에 막히지 않도록 플러그인 fetch 사용 */
+async function appFetch(url: string, init?: RequestInit): Promise<Response> {
+  if (!isTauri()) return fetch(url, init)
+
+  const headers: Record<string, string> = {}
+  if (init?.headers) {
+    const h = new Headers(init.headers)
+    h.forEach((value, key) => {
+      headers[key] = value
+    })
+  }
+  return tauriFetch(url, {
+    method: init?.method ?? 'GET',
+    headers,
+    body: init?.body,
+  })
 }
 
 interface ArchiveResponse {
@@ -69,7 +92,7 @@ async function fetchButtonRecords(
     throw new Error('API 토큰 또는 닉네임이 필요합니다.')
   }
 
-  const res = await fetch(url, { headers })
+  const res = await appFetch(url, { headers })
   if (!res.ok) {
     throw new Error(`기록 조회 실패 (${button}, HTTP ${res.status})`)
   }

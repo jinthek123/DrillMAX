@@ -4,6 +4,12 @@
   "description": "Default capabilities for RhythmForm",
   "windows": ["main"],
   "permissions": [
-    "core:default"
+    "core:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://v-archive.net/*" }
+      ]
+    }
   ]
 }
