@@ -4,7 +4,7 @@ V-ARCHIVE `[미갱신]` 플레이까지 로컬에 기록하는 Windows 앱입니
 for DJMAX RESPECT V
 
 > Unofficial fan-made tool. DJMAX RESPECT V and related trademarks are the property of NEOWIZ.  
-> 비공식 팬메이드 도구입니다. DJMAX RESPECT V 및 관련 권리의 저작권은 (주)네오위즈에 있습니다.
+> 비공식 팬메이드 도구입니다. 본 사이트에 사용된 게임 콘텐츠의 저작권은 (주)네오위즈에 있습니다.
 
 Electron 버전은 [`rhythmForm-electroVer`](https://github.com/jinthek123/rhythmForm-electroVer)에 있습니다.
 
