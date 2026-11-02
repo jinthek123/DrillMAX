@@ -16,7 +16,7 @@ import {
   saveSettings,
   type ThemeMode,
 } from './lib/settings'
-import { exportJson } from './lib/storage'
+import { downloadBackup } from './lib/backup'
 import { useAppData } from './hooks/useAppData'
 import { resolveArchiveBest, useLiveBridge } from './hooks/useLiveBridge'
 import { useSongCatalog } from './hooks/useSongCatalog'
@@ -193,15 +193,9 @@ export default function App() {
         onDeletePlay={deletePlay}
         onOpenImport={() => setImportOpen(true)}
         onExport={() => {
-          const blob = new Blob([exportJson(data)], {
-            type: 'application/json',
+          void downloadBackup(data).catch((e) => {
+            alert(e instanceof Error ? e.message : '백업 저장에 실패했습니다.')
           })
-          const url = URL.createObjectURL(blob)
-          const a = document.createElement('a')
-          a.href = url
-          a.download = `rhythmform-backup-${new Date().toISOString().slice(0, 10)}.json`
-          a.click()
-          URL.revokeObjectURL(url)
         }}
         onImportJson={(file) => {
           const reader = new FileReader()
