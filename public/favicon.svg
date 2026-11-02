@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.2" y2="1">
+      <stop offset="0%" stop-color="#24103F"/>
+      <stop offset="100%" stop-color="#0D0618"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFE566"/>
+      <stop offset="100%" stop-color="#F0B400"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#bg)"/>
+  <!-- axes -->
+  <path d="M28 96 H100 M28 96 V32" stroke="#5A3D7A" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <!-- do mi re fa sol — rise, dip, rise, rise -->
+  <polyline
+    points="34,90 50,58 66,72 82,46 100,30"
+    fill="none"
+    stroke="url(#line)"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="34" cy="90" r="5" fill="#F5C518"/>
+  <circle cx="50" cy="58" r="5" fill="#F5C518"/>
+  <circle cx="66" cy="72" r="5" fill="#F5C518"/>
+  <circle cx="82" cy="46" r="5" fill="#F5C518"/>
+  <circle cx="100" cy="30" r="6.5" fill="#FF2D95"/>
+</svg>

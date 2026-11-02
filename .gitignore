@@ -1,0 +1,36 @@
+# deps / build
+node_modules
+dist
+dist-ssr
+release
+src-tauri/target
+src-tauri/gen
+
+# env / secrets
+*.local
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+
+# logs / temp
+logs
+*.log
+npm-debug.log*
+bridge-dump.txt
+exe-strings*.txt
+*.html.bak
+Thumbs.db
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
