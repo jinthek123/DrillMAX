@@ -7,9 +7,11 @@ V-ARCHIVE 클라이언트에 표시되는 **로그 텍스트**를 읽어, 공식
 정확도 추이를 그래프로 확인하며 0.01%를 깎는 과정과 결과를 시각적으로 파악할 수 있습니다.
 
 > **Unofficial fan-made tool.** DJMAX RESPECT V 및 관련 상표·저작물의 권리는 (주)네오위즈에 있습니다.  
-> 본 프로젝트는 네오위즈와 무관한 비공식 팬메이드 도구입니다.
+> 본 프로그램은 네오위즈와 무관한 비공식 팬메이드 도구입니다.
 
 [다운로드 (Releases)](https://github.com/jinthek123/rhythmForm/releases) · [버그·문의 (Issues)](https://github.com/jinthek123/rhythmForm/issues)
+
+<img width="850" height="563" alt="image" src="https://github.com/user-attachments/assets/6910c7cf-f367-4e45-8d7f-4fbda03a3222" />
 
 ---
 
