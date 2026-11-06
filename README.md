@@ -108,6 +108,8 @@ npm run pack       # 설치본 빌드
 
 산출물 예: `src-tauri/target/release/bundle/nsis/`
 
+변경사항이 생기는 즉시 github에 갱신하고 있습니다. 최종 배포본은 release, 그 외 실험용 등의 목적으로 사용할 경우 git을 통해 코드 전체를 다운받으시면 됩니다.
+
 ---
 
 ## 라이선스
