@@ -14,6 +14,10 @@ src-tauri/gen
 *.pem
 *.key
 credentials*.json
+settings.cfg
+
+# local data / dumps
+data/
 
 # logs / temp
 logs

@@ -55,7 +55,7 @@ export function PlayPanel({
               로그 붙여넣기
             </button>
             <button type="button" className="btn-ghost" onClick={onExport}>
-              백업 JSON
+              데이터 폴더
             </button>
           </div>
         </div>
@@ -67,7 +67,7 @@ export function PlayPanel({
     <main className="main">
       <header className="main-head">
         <div>
-          <p className="eyebrow">
+          <p className={`eyebrow button-tint-${chart.button}`}>
             {chart.button} {chart.difficulty}
           </p>
           <h1>{chart.title}</h1>
@@ -98,7 +98,7 @@ export function PlayPanel({
             로그 가져오기
           </button>
           <button type="button" className="btn-ghost" onClick={onExport}>
-            백업
+            데이터 폴더
           </button>
           <label className="btn-ghost file-btn">
             복원
@@ -118,7 +118,7 @@ export function PlayPanel({
 
       <section className="chart-section" aria-label="Accuracy">
         <div className="chart-legend">
-          <span className="legend-score">Accuracy</span>
+          <span className="legend-score">모든 기록</span>
           <span className="legend-record">Highest Record</span>
         </div>
         <ProgressChart plays={plays} highest={highest} />

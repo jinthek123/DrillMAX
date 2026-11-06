@@ -1,4 +1,4 @@
-﻿import { fetch as tauriFetch } from '@tauri-apps/plugin-http'
+﻿import { archiveUrl } from './bridgeUrl'
 import type { ButtonMode, Difficulty } from '../types'
 
 export interface ArchiveRecord {
@@ -7,28 +7,6 @@ export interface ArchiveRecord {
   score: number
   maxCombo?: boolean
   button?: number
-}
-
-function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
-}
-
-/** 패키지된 Tauri에선 CORS에 막히지 않도록 플러그인 fetch 사용 */
-async function appFetch(url: string, init?: RequestInit): Promise<Response> {
-  if (!isTauri()) return fetch(url, init)
-
-  const headers: Record<string, string> = {}
-  if (init?.headers) {
-    const h = new Headers(init.headers)
-    h.forEach((value, key) => {
-      headers[key] = value
-    })
-  }
-  return tauriFetch(url, {
-    method: init?.method ?? 'GET',
-    headers,
-    body: init?.body,
-  })
 }
 
 interface ArchiveResponse {
@@ -42,6 +20,13 @@ const BUTTONS: ButtonMode[] = ['4B', '5B', '6B', '8B']
 
 function buttonNumber(button: ButtonMode): number {
   return Number(button.replace('B', ''))
+}
+
+/** Open API 조회토큰 — Bearer 유무 모두 허용 */
+function authHeader(token: string): string {
+  const t = token.trim()
+  if (/^bearer\s+/i.test(t)) return t
+  return t
 }
 
 export function archiveKey(
@@ -84,17 +69,26 @@ async function fetchButtonRecords(
 
   let url: string
   if (opts.token?.trim()) {
-    url = `https://v-archive.net/api/v2/open-token/archive/button/${btn}`
-    headers.Authorization = opts.token.trim()
+    url = archiveUrl(`/api/v2/open-token/archive/button/${btn}`)
+    headers.Authorization = authHeader(opts.token)
   } else if (opts.nickname?.trim()) {
-    url = `https://v-archive.net/api/v2/archive/${encodeURIComponent(opts.nickname.trim())}/button/${btn}`
+    url = archiveUrl(
+      `/api/v2/archive/${encodeURIComponent(opts.nickname.trim())}/button/${btn}`,
+    )
   } else {
     throw new Error('API 토큰 또는 닉네임이 필요합니다.')
   }
 
-  const res = await appFetch(url, { headers })
+  const res = await fetch(url, { headers })
   if (!res.ok) {
-    throw new Error(`기록 조회 실패 (${button}, HTTP ${res.status})`)
+    let detail = ''
+    try {
+      const errJson = (await res.json()) as { message?: string }
+      if (errJson.message) detail = `: ${errJson.message}`
+    } catch {
+      /* ignore */
+    }
+    throw new Error(`기록 조회 실패 (${button}, HTTP ${res.status})${detail}`)
   }
   const json = (await res.json()) as ArchiveResponse
   if (json.success === false) {
@@ -163,7 +157,6 @@ export async function fetchArchiveBest(
 ): Promise<number | null> {
   const { records } = await fetchButtonRecords(button, {
     ...opts,
-    // pattern filter optional - fetch all and find
   })
   const hit = records.find(
     (r) =>

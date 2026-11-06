@@ -1,15 +1,22 @@
-﻿import type { ButtonMode, Difficulty } from '../types'
-
-const API_URL = 'https://v-archive.net/db/v2/songs.json'
+﻿import { archiveUrl } from './bridgeUrl'
+import type { ButtonMode, Difficulty } from '../types'
 const CACHE_KEY = 'rhythmform-song-catalog-v1'
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7 // 7일
 
+export interface SongPatternMeta {
+  level?: number
+  floor?: number | null
+  floorName?: string | null
+}
+
 export interface SongEntry {
+  /** songs.json 의 title (곡 ID) */
+  title?: number
   name: string
   composer: string
   dlcCode: string
   patterns: Partial<
-    Record<ButtonMode, Partial<Record<Difficulty, { level?: number }>>>
+    Record<ButtonMode, Partial<Record<Difficulty, SongPatternMeta>>>
   >
 }
 
@@ -47,9 +54,10 @@ export function isCacheFresh(): boolean {
 }
 
 export async function fetchSongCatalog(): Promise<SongEntry[]> {
-  const res = await fetch(API_URL)
+  const res = await fetch(archiveUrl('/db/v2/songs.json'))
   if (!res.ok) throw new Error(`곡 목록 로드 실패 (${res.status})`)
   const data = (await res.json()) as Array<{
+    title?: number
     name?: string
     composer?: string
     dlcCode?: string
@@ -59,6 +67,7 @@ export async function fetchSongCatalog(): Promise<SongEntry[]> {
   const songs: SongEntry[] = data
     .filter((s) => typeof s.name === 'string' && s.name.trim())
     .map((s) => ({
+      title: typeof s.title === 'number' ? s.title : undefined,
       name: s.name!.trim(),
       composer: (s.composer ?? '').trim(),
       dlcCode: (s.dlcCode ?? '').trim(),

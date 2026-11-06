@@ -1,21 +1,17 @@
 interface BackupModalProps {
   open: boolean
   backupDir: string
-  busy?: boolean
   message?: string | null
   onClose: () => void
   onPickFolder: () => void
-  onConfirm: () => void
 }
 
 export function BackupModal({
   open,
   backupDir,
-  busy = false,
   message = null,
   onClose,
   onPickFolder,
-  onConfirm,
 }: BackupModalProps) {
   if (!open) return null
 
@@ -27,24 +23,22 @@ export function BackupModal({
         aria-labelledby="backup-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="backup-title">백업</h2>
-        <p className="modal-hint">백업하시겠습니까?</p>
+        <h2 id="backup-title">데이터 폴더</h2>
+        <p className="modal-hint">
+          성적은 <code>rhythmForm.json</code> 으로 자동 저장됩니다. 폴더를
+          지정하면 그 위치에, 없으면 앱 데이터 폴더에 저장합니다.
+        </p>
 
         <label className="field">
-          <span>백업 폴더</span>
+          <span>저장 폴더 (선택)</span>
           <div className="backup-path-row">
             <input
               className="mono"
               readOnly
-              value={backupDir || '(아직 지정되지 않음)'}
+              value={backupDir || '(앱 데이터 폴더 · 자동)'}
               title={backupDir || undefined}
             />
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={onPickFolder}
-              disabled={busy}
-            >
+            <button type="button" className="btn-ghost" onClick={onPickFolder}>
               폴더 선택
             </button>
           </div>
@@ -53,21 +47,8 @@ export function BackupModal({
         {message && <p className="modal-msg">{message}</p>}
 
         <div className="modal-actions">
-          <button
-            type="button"
-            className="btn-ghost"
-            onClick={onClose}
-            disabled={busy}
-          >
-            취소
-          </button>
-          <button
-            type="button"
-            className="btn-primary"
-            onClick={onConfirm}
-            disabled={busy}
-          >
-            {busy ? '저장 중…' : '백업'}
+          <button type="button" className="btn-primary" onClick={onClose}>
+            확인
           </button>
         </div>
       </div>

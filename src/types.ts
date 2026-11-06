@@ -26,9 +26,26 @@ export function isPerfectPlay(accuracy: number, _maxCombo?: boolean): boolean {
   return accuracy >= 100
 }
 
+/** 차트별·하루(로컬 날짜) 최고 정확도 */
+export interface DailyBest {
+  /** YYYY-MM-DD (로컬) */
+  date: string
+  chartId: string
+  accuracy: number
+  playId?: string
+  updatedAt: string
+}
+
 export interface AppData {
   charts: Chart[]
   plays: Play[]
+  /** 차트별 Daily Best (날짜당 1개, 약 30일) */
+  dailyBests?: DailyBest[]
+  /**
+   * 사용자가 지운 플레이 지문.
+   * LIVE 스냅샷/이벤트가 같은 기록을 다시 넣지 못하게 함.
+   */
+  suppressedKeys?: string[]
 }
 
 export interface ParsedLogPlay {

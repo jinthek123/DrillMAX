@@ -47,12 +47,11 @@ export function useLiveBridge({
   const syncedSnapshotRef = useRef(false)
 
   useEffect(() => {
-    if (!enabled) {
-      syncedSnapshotRef.current = false
-      return
-    }
+    if (!enabled) return
 
     let cancelled = false
+    // 스냅샷은 앱 세션당 1회만 — LIVE 토글마다 전체 재수집하지 않음
+    // (삭제한 기록이 V-ARCHIVE 캡처에서 다시 들어오는 것 방지)
 
     function ingest(ev: LiveBridgeEvent, nickname: string | null) {
       if (seenRef.current.has(ev.id)) {

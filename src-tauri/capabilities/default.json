@@ -8,6 +8,12 @@
     "dialog:default",
     "fs:default",
     "fs:allow-write-text-file",
+    "fs:allow-read-text-file",
+    "fs:allow-exists",
+    "fs:allow-mkdir",
+    "fs:allow-app-read",
+    "fs:allow-app-write",
+    "fs:allow-app-meta",
     {
       "identifier": "http:default",
       "allow": [

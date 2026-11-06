@@ -37,6 +37,16 @@
   --font-display: 'Space Grotesk', 'Outfit', sans-serif;
   --font-mono: 'Outfit', sans-serif;
   --radius: 14px;
+
+  /* DJMAX Button Tunes signature */
+  --btn-4: #a2d877;
+  --btn-5: #8ac2d3;
+  --btn-6: #f9c187;
+  --btn-8: #78b2a9;
+  --btn-4-ink: #24301c;
+  --btn-5-ink: #1e2a36;
+  --btn-6-ink: #3a2418;
+  --btn-8-ink: #1c2e2c;
 }
 
 /* Dark — DJMAX midnight / gold / magenta */

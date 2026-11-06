@@ -21,3 +21,12 @@ export function bridgeUrl(path: string): string {
   if (base) return `${base.replace(/\/$/, '')}${suffix}`
   return `/bridge${suffix}`
 }
+
+/**
+ * V-ARCHIVE 공개 API/DB — 브리지 `/proxy/*` 경유 (웹뷰 CORS 회피).
+ * path 예: `/api/v2/...`, `/db/v2/songs.json`
+ */
+export function archiveUrl(path: string): string {
+  const suffix = path.startsWith('/') ? path : `/${path}`
+  return bridgeUrl(`/proxy${suffix}`)
+}

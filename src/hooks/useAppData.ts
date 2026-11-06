@@ -1,9 +1,27 @@
-﻿import { useCallback, useEffect, useMemo, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { importJson, loadData, saveData } from '../lib/storage'
+import {
+  appendPlay,
+  normalizeAppData,
+  sanitizeAppData,
+  upsertDailyBest,
+} from '../lib/dailyBest'
+import {
+  createChart,
+  findChart,
+  isNearDuplicatePlay,
+} from '../lib/chartIdentity'
+import { computeHighest } from '../lib/highest'
+import { round2 } from '../lib/math'
+import {
+  addSuppressedKeys,
+  fingerprintFromPlay,
+  isSuppressed,
+  playFingerprint,
+} from '../lib/suppressKeys'
 import type {
   AppData,
   ButtonMode,
-  Chart,
   Difficulty,
   LiveBridgeEvent,
   ParsedLogPlay,
@@ -19,6 +37,8 @@ export function useAppData() {
   const [data, setData] = useState<AppData>(() => loadData())
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [latestLive, setLatestLive] = useState<Play | null>(null)
+  const dataRef = useRef(data)
+  dataRef.current = data
 
   useEffect(() => {
     saveData(data)
@@ -48,15 +68,14 @@ export function useAppData() {
       )
   }, [data.plays, selectedId])
 
-  const highest = useMemo(() => {
-    const fromPlays =
-      selectedPlays.length > 0
-        ? Math.max(...selectedPlays.map((p) => p.accuracy))
-        : null
-    const fromArchive = selectedChart?.archiveBest ?? null
-    if (fromPlays == null && fromArchive == null) return null
-    return Math.max(fromPlays ?? 0, fromArchive ?? 0)
-  }, [selectedPlays, selectedChart])
+  const highest = useMemo(
+    () =>
+      computeHighest(
+        selectedPlays.map((p) => p.accuracy),
+        selectedChart?.archiveBest,
+      ),
+    [selectedPlays, selectedChart],
+  )
 
   const latestPlay = useMemo(() => {
     if (selectedPlays.length === 0) return null
@@ -68,24 +87,13 @@ export function useAppData() {
       const trimmed = title.trim()
       if (!trimmed) return null
 
-      const existing = data.charts.find(
-        (c) =>
-          c.title === trimmed &&
-          c.button === button &&
-          c.difficulty === difficulty,
-      )
+      const existing = findChart(data.charts, trimmed, button, difficulty)
       if (existing) {
         setSelectedId(existing.id)
         return existing.id
       }
 
-      const chart: Chart = {
-        id: uid(),
-        title: trimmed,
-        button,
-        difficulty,
-        createdAt: new Date().toISOString(),
-      }
+      const chart = createChart(trimmed, button, difficulty, uid())
       setData((prev) => ({ ...prev, charts: [...prev.charts, chart] }))
       setSelectedId(chart.id)
       return chart.id
@@ -94,10 +102,21 @@ export function useAppData() {
   )
 
   const deleteChart = useCallback((chartId: string) => {
-    setData((prev) => ({
-      charts: prev.charts.filter((c) => c.id !== chartId),
-      plays: prev.plays.filter((p) => p.chartId !== chartId),
-    }))
+    setData((prev) => {
+      const chart = prev.charts.find((c) => c.id === chartId)
+      const keys =
+        chart == null
+          ? []
+          : prev.plays
+              .filter((p) => p.chartId === chartId)
+              .map((p) => fingerprintFromPlay(p, chart))
+      return sanitizeAppData({
+        charts: prev.charts.filter((c) => c.id !== chartId),
+        plays: prev.plays.filter((p) => p.chartId !== chartId),
+        dailyBests: [],
+        suppressedKeys: addSuppressedKeys(prev.suppressedKeys, keys),
+      })
+    })
   }, [])
 
   const addPlay = useCallback(
@@ -111,23 +130,19 @@ export function useAppData() {
         status?: Play['status']
       },
     ) => {
-      const rounded = Math.round(accuracy * 100) / 100
-      if (rounded < 0 || rounded > 100) return
-
-      // 100%는 PP → Max Combo 자동
-      const maxCombo = rounded >= 100 ? true : opts?.maxCombo
+      const rounded = round2(accuracy)
+      if (rounded <= 0 || rounded > 100) return
 
       const play: Play = {
         id: uid(),
         chartId,
         accuracy: rounded,
         playedAt,
-        maxCombo,
+        maxCombo: rounded >= 100 ? true : opts?.maxCombo,
         source: opts?.source ?? 'manual',
         status: opts?.status,
       }
-      setData((prev) => ({ ...prev, plays: [...prev.plays, play] }))
-      if (opts?.source === 'live') setLatestLive(play)
+      setData((prev) => appendPlay(prev, play).data)
     },
     [],
   )
@@ -161,78 +176,99 @@ export function useAppData() {
   }, [])
 
   const deletePlay = useCallback((playId: string) => {
-    setData((prev) => ({
-      ...prev,
-      plays: prev.plays.filter((p) => p.id !== playId),
-    }))
+    setData((prev) => {
+      const play = prev.plays.find((p) => p.id === playId)
+      const chart =
+        play != null
+          ? prev.charts.find((c) => c.id === play.chartId)
+          : undefined
+      const keys =
+        play && chart ? [fingerprintFromPlay(play, chart)] : []
+      return sanitizeAppData({
+        ...prev,
+        plays: prev.plays.filter((p) => p.id !== playId),
+        suppressedKeys: addSuppressedKeys(prev.suppressedKeys, keys),
+      })
+    })
   }, [])
 
   const importLogPlays = useCallback(
     (parsed: ParsedLogPlay[], dateBase?: string) => {
+      let next = dataRef.current
       let added = 0
-      setData((prev) => {
-        let charts = [...prev.charts]
-        let plays = [...prev.plays]
-        let firstNewChartId: string | null = null
+      let firstNewChartId: string | null = null
 
-        for (const item of parsed) {
-          let chart = charts.find(
-            (c) =>
-              c.title === item.title &&
-              c.button === item.button &&
-              c.difficulty === item.difficulty,
+      for (const item of parsed) {
+        let chart = findChart(
+          next.charts,
+          item.title,
+          item.button,
+          item.difficulty,
+        )
+        if (!chart) {
+          chart = createChart(
+            item.title,
+            item.button,
+            item.difficulty,
+            uid(),
           )
-          if (!chart) {
-            chart = {
-              id: uid(),
-              title: item.title,
-              button: item.button,
-              difficulty: item.difficulty,
-              createdAt: new Date().toISOString(),
-            }
-            charts.push(chart)
-            if (!firstNewChartId) firstNewChartId = chart.id
-          }
+          next = { ...next, charts: [...next.charts, chart] }
+          if (!firstNewChartId) firstNewChartId = chart.id
+        }
 
-          const playedAt = dateBase
-            ? combineDateAndTime(dateBase, item.time)
-            : todayAt(item.time)
+        const playedAt = dateBase
+          ? combineDateAndTime(dateBase, item.time)
+          : todayAt(item.time)
 
-          const dup = plays.some(
-            (p) =>
-              p.chartId === chart!.id &&
-              p.accuracy === item.accuracy &&
-              Math.abs(
-                new Date(p.playedAt).getTime() - new Date(playedAt).getTime(),
-              ) < 1000,
-          )
-          if (dup) continue
+        const fp = playFingerprint(
+          item.button,
+          item.difficulty,
+          item.title,
+          item.accuracy,
+          item.time,
+        )
+        if (isSuppressed(next.suppressedKeys, fp)) continue
 
-          plays.push({
-            id: uid(),
-            chartId: chart.id,
-            accuracy: item.accuracy,
+        if (
+          isNearDuplicatePlay(
+            next.plays,
+            chart.id,
+            item.accuracy,
             playedAt,
-            maxCombo: item.maxCombo || item.accuracy >= 100 || undefined,
-            source: 'log',
-            status: item.status,
-          })
-          added += 1
+            1000,
+          ) >= 0
+        ) {
+          continue
         }
 
-        if (firstNewChartId) setSelectedId(firstNewChartId)
-        else if (parsed[0]) {
-          const match = charts.find(
-            (c) =>
-              c.title === parsed[0].title &&
-              c.button === parsed[0].button &&
-              c.difficulty === parsed[0].difficulty,
-          )
-          if (match) setSelectedId(match.id)
+        const play: Play = {
+          id: uid(),
+          chartId: chart.id,
+          accuracy: item.accuracy,
+          playedAt,
+          maxCombo: item.maxCombo || item.accuracy >= 100 || undefined,
+          source: 'log',
+          status: item.status,
         }
+        const applied = appendPlay(next, play)
+        next = applied.data
+        if (applied.accepted) added += 1
+      }
 
-        return { charts, plays }
-      })
+      dataRef.current = next
+      setData(next)
+
+      if (firstNewChartId) setSelectedId(firstNewChartId)
+      else if (parsed[0]) {
+        const match = findChart(
+          next.charts,
+          parsed[0].title,
+          parsed[0].button,
+          parsed[0].difficulty,
+        )
+        if (match) setSelectedId(match.id)
+      }
+
       return added
     },
     [],
@@ -240,54 +276,64 @@ export function useAppData() {
 
   const ingestLiveEvent = useCallback((ev: LiveBridgeEvent) => {
     let chartId = ''
-    let play: Play | null = null
+    let acceptedPlay: Play | null = null
 
     setData((prev) => {
-      let charts = [...prev.charts]
-      let plays = [...prev.plays]
-
-      let chart = charts.find(
-        (c) =>
-          c.title === ev.title &&
-          c.button === ev.button &&
-          c.difficulty === ev.difficulty,
+      const fp = playFingerprint(
+        ev.button,
+        ev.difficulty,
+        ev.title,
+        ev.accuracy,
+        ev.time,
       )
+      if (isSuppressed(prev.suppressedKeys, fp)) {
+        const existing = findChart(
+          prev.charts,
+          ev.title,
+          ev.button,
+          ev.difficulty,
+        )
+        chartId = existing?.id ?? ''
+        if (existing) setSelectedId(existing.id)
+        return prev
+      }
+
+      let charts = [...prev.charts]
+      let chart = findChart(charts, ev.title, ev.button, ev.difficulty)
       if (!chart) {
-        chart = {
-          id: uid(),
-          title: ev.title,
-          button: ev.button,
-          difficulty: ev.difficulty,
-          createdAt: new Date().toISOString(),
-        }
+        chart = createChart(ev.title, ev.button, ev.difficulty, uid())
         charts.push(chart)
       }
       chartId = chart.id
 
       const playedAt = todayAt(ev.time)
-      const dupIdx = plays.findIndex(
-        (p) =>
-          p.chartId === chart!.id &&
-          p.accuracy === ev.accuracy &&
-          Math.abs(
-            new Date(p.playedAt).getTime() - new Date(playedAt).getTime(),
-          ) < 2000,
+      // 동일 LIVE 이벤트 중복(2초)만 스킵 — 그날의 다른 플레이는 모두 보관
+      const dupIdx = isNearDuplicatePlay(
+        prev.plays,
+        chart.id,
+        ev.accuracy,
+        playedAt,
+        2000,
       )
       if (dupIdx >= 0) {
-        // 나중에 MaxCombo 배너가 잡히면 기존 기록 업그레이드
-        if (ev.maxCombo && !plays[dupIdx].maxCombo) {
-          plays = plays.map((p, i) =>
+        if (ev.maxCombo && !prev.plays[dupIdx].maxCombo) {
+          const plays = prev.plays.map((p, i) =>
             i === dupIdx ? { ...p, maxCombo: true } : p,
           )
-          play = plays[dupIdx]
+          acceptedPlay = plays[dupIdx]
           setSelectedId(chart.id)
-          return { charts, plays }
+          return {
+            ...prev,
+            charts,
+            plays,
+            dailyBests: upsertDailyBest(prev.dailyBests, plays[dupIdx]),
+          }
         }
         setSelectedId(chart.id)
-        return prev
+        return charts !== prev.charts ? { ...prev, charts } : prev
       }
 
-      play = {
+      const play: Play = {
         id: uid(),
         chartId: chart.id,
         accuracy: ev.accuracy,
@@ -296,18 +342,20 @@ export function useAppData() {
         source: 'live',
         status: ev.status,
       }
-      plays.push(play)
+      const applied = appendPlay({ ...prev, charts }, play)
+      if (applied.accepted) acceptedPlay = play
       setSelectedId(chart.id)
-      return { charts, plays }
+      return applied.data
     })
 
-    if (play) setLatestLive(play)
+    if (acceptedPlay) setLatestLive(acceptedPlay)
     return chartId
   }, [])
 
   const replaceAll = useCallback((next: AppData) => {
-    setData(next)
-    setSelectedId(next.charts[0]?.id ?? null)
+    const normalized = normalizeAppData(next)
+    setData(normalized)
+    setSelectedId(normalized.charts[0]?.id ?? null)
   }, [])
 
   const importFromJsonText = useCallback(
@@ -335,6 +383,7 @@ export function useAppData() {
     setArchiveBest,
     applyArchiveBests,
     importFromJsonText,
+    replaceAll,
   }
 }
 

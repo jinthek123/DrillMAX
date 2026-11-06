@@ -85,7 +85,16 @@ export function ImportLogModal({ open, onClose, onImport }: ImportLogModalProps)
             disabled={preview.length === 0}
             onClick={() => {
               const n = onImport(preview, dateYmd)
-              setMessage(`${n}건 저장됨 (중복 제외)`)
+              const skipped = preview.length - n
+              if (n === 0 && skipped > 0) {
+                setMessage(
+                  `이미 같은 시각·점수 기록이 있어 ${skipped}건 건너뜀 (신규 0)`,
+                )
+              } else if (skipped > 0) {
+                setMessage(`${n}건 저장 · 중복 ${skipped}건 건너뜀`)
+              } else {
+                setMessage(`${n}건 저장됨`)
+              }
               if (n > 0) {
                 setText('')
               }

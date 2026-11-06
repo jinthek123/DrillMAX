@@ -42,7 +42,7 @@ export function parseVArchiveLog(text: string): ParsedLogPlay[] {
 
     const title = titleRaw.trim()
     const accuracy = Math.round(Number.parseFloat(acc) * 100) / 100
-    if (!title || Number.isNaN(accuracy)) continue
+    if (!title || Number.isNaN(accuracy) || accuracy <= 0) continue
 
     const maxCombo =
       accuracy >= 100 ||

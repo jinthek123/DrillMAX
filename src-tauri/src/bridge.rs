@@ -1,21 +1,31 @@
 use axum::{
-    extract::{Query, State},
-    http::Method,
-    response::IntoResponse,
-    routing::get,
+    body::Body,
+    extract::{Path as AxumPath, Query, State},
+    http::{header, HeaderMap, Method, StatusCode, Uri},
+    response::{IntoResponse, Response},
+    routing::{any, get},
     Json, Router,
 };
+use bytes::Bytes;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Serialize;
 use std::{
     collections::HashSet,
-    path::{Path, PathBuf},
+    path::{Path as FsPath, PathBuf},
     sync::Arc,
     time::Duration,
 };
 use tokio::{process::Command, sync::Mutex, time::interval};
 use tower_http::cors::{Any, CorsLayer};
+
+static HTTP: Lazy<reqwest::Client> = Lazy::new(|| {
+    reqwest::Client::builder()
+        .user_agent("RhythmForm/1.0")
+        .timeout(Duration::from_secs(30))
+        .build()
+        .expect("http client")
+});
 
 static PLAY_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(
@@ -187,7 +197,7 @@ fn fingerprint(plays: &[SnapshotPlay]) -> String {
         .join("\n")
 }
 
-async fn run_reader(reader: &Path) -> (i32, String, String) {
+async fn run_reader(reader: &FsPath) -> (i32, String, String) {
     let mut cmd = Command::new(reader);
     cmd.stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped());
@@ -361,6 +371,85 @@ async fn snapshot(State(state): State<Shared>) -> impl IntoResponse {
     }))
 }
 
+/// 웹뷰 CORS를 피하기 위해 V-ARCHIVE 요청을 로컬 브리지로 중계한다.
+async fn proxy_varchive(
+    method: Method,
+    AxumPath(path): AxumPath<String>,
+    uri: Uri,
+    headers: HeaderMap,
+    body: Bytes,
+) -> Response {
+    if method == Method::OPTIONS {
+        return StatusCode::NO_CONTENT.into_response();
+    }
+
+    // path traversal / 외부 호스트 차단
+    if path.contains("..") || path.starts_with('/') {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({
+                "success": false,
+                "message": "잘못된 프록시 경로",
+            })),
+        )
+            .into_response();
+    }
+
+    let query = uri
+        .query()
+        .map(|q| format!("?{q}"))
+        .unwrap_or_default();
+    let url = format!("https://v-archive.net/{path}{query}");
+
+    let mut req = HTTP.request(method.clone(), &url);
+    if let Some(auth) = headers.get(header::AUTHORIZATION) {
+        req = req.header(header::AUTHORIZATION, auth.clone());
+    }
+    if let Some(ct) = headers.get(header::CONTENT_TYPE) {
+        req = req.header(header::CONTENT_TYPE, ct.clone());
+    }
+    if !body.is_empty() {
+        req = req.body(body);
+    }
+
+    match req.send().await {
+        Ok(upstream) => {
+            let status =
+                StatusCode::from_u16(upstream.status().as_u16()).unwrap_or(StatusCode::BAD_GATEWAY);
+            let content_type = upstream
+                .headers()
+                .get(header::CONTENT_TYPE)
+                .cloned();
+            match upstream.bytes().await {
+                Ok(bytes) => {
+                    let mut res = Response::new(Body::from(bytes));
+                    *res.status_mut() = status;
+                    if let Some(ct) = content_type {
+                        res.headers_mut().insert(header::CONTENT_TYPE, ct);
+                    }
+                    res
+                }
+                Err(e) => (
+                    StatusCode::BAD_GATEWAY,
+                    Json(serde_json::json!({
+                        "success": false,
+                        "message": format!("업스트림 본문 읽기 실패: {e}"),
+                    })),
+                )
+                    .into_response(),
+            }
+        }
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            Json(serde_json::json!({
+                "success": false,
+                "message": format!("V-ARCHIVE 연결 실패: {e}"),
+            })),
+        )
+            .into_response(),
+    }
+}
+
 pub async fn start_bridge(reader_path: PathBuf, port: u16, poll_ms: u64) -> Result<(), String> {
     let state = Arc::new(Mutex::new(BridgeState::new(reader_path.clone())));
 
@@ -375,13 +464,14 @@ pub async fn start_bridge(reader_path: PathBuf, port: u16, poll_ms: u64) -> Resu
 
     let cors = CorsLayer::new()
         .allow_origin(Any)
-        .allow_methods([Method::GET, Method::OPTIONS])
+        .allow_methods(Any)
         .allow_headers(Any);
 
     let app = Router::new()
         .route("/api/health", get(health))
         .route("/api/events", get(events))
         .route("/api/snapshot", get(snapshot))
+        .route("/proxy/{*path}", any(proxy_varchive))
         .layer(cors)
         .with_state(state);
 
@@ -400,7 +490,7 @@ pub async fn start_bridge(reader_path: PathBuf, port: u16, poll_ms: u64) -> Resu
     Ok(())
 }
 
-pub fn resolve_reader_path(resource_dir: &Path) -> PathBuf {
+pub fn resolve_reader_path(resource_dir: &FsPath) -> PathBuf {
     let candidates = [
         resource_dir.join("resources").join("IeHtmlReader.exe"),
         resource_dir.join("IeHtmlReader.exe"),

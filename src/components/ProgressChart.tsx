@@ -3,7 +3,6 @@ import {
   CartesianGrid,
   Line,
   LineChart,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -11,7 +10,14 @@ import {
 } from 'recharts'
 import type { Play } from '../types'
 import { isPerfectPlay } from '../types'
+import {
+  buildYScale,
+  chartAxisTick,
+  chartTooltipStyle,
+  formatYTick,
+} from '../lib/chartScale'
 import { formatTimeAxis } from '../lib/parseLog'
+import { HighestReferenceLine } from './ShortHighestMark'
 
 interface ProgressChartProps {
   plays: Play[]
@@ -28,7 +34,6 @@ interface Point {
 
 function dotFill(payload?: Point): string {
   if (!payload) return 'var(--score-dot)'
-  // PP = 빨강 계열, MC = 초록
   if (payload.perfectPlay) return 'var(--pp)'
   if (payload.maxCombo) return 'var(--mc)'
   return 'var(--score-dot)'
@@ -60,41 +65,6 @@ function ChartDot({
   )
 }
 
-function round2(n: number): number {
-  return Math.round(n * 100) / 100
-}
-
-function buildYScale(min: number, max: number) {
-  // 99.9% 이상 구간: 0.02 단위
-  const useFine = max >= 99.9 && min >= 99.5
-
-  if (useFine) {
-    const step = 0.02
-    const pad = Math.max(step * 2, (max - min) * 0.25)
-    let yMin = Math.floor((min - pad) / step) * step
-    let yMax = Math.ceil((max + pad) / step) * step
-    yMin = Math.max(0, round2(yMin))
-    yMax = Math.min(100, round2(yMax))
-
-    const ticks: number[] = []
-    for (let v = yMin; v <= yMax + 1e-9; v = round2(v + step)) {
-      ticks.push(v)
-    }
-    // 눈금이 너무 많으면 간격 넓히기
-    const shown =
-      ticks.length <= 12
-        ? ticks
-        : ticks.filter((_, i) => i % Math.ceil(ticks.length / 10) === 0)
-
-    return { yMin, yMax, ticks: shown, fine: true as const }
-  }
-
-  const pad = Math.max(0.35, (max - min) * 0.22)
-  const yMin = Math.max(0, Math.floor((min - pad) * 10) / 10)
-  const yMax = Math.min(100, Math.ceil((max + pad) * 10) / 10)
-  return { yMin, yMax, ticks: undefined as number[] | undefined, fine: false as const }
-}
-
 function ProgressChartInner({ plays, highest }: ProgressChartProps) {
   const data: Point[] = useMemo(
     () =>
@@ -110,12 +80,13 @@ function ProgressChartInner({ plays, highest }: ProgressChartProps) {
 
   const scale = useMemo(() => {
     if (data.length === 0) {
-      return { yMin: 0, yMax: 100, ticks: undefined, fine: false as const }
+      return { yMin: 0, yMax: 100, ticks: undefined, fine: false }
     }
     const values = data.map((d) => d.accuracy)
-    const min = Math.min(...values)
-    const max = Math.max(...values, highest ?? 0)
-    return buildYScale(min, max)
+    return buildYScale(
+      Math.min(...values),
+      Math.max(...values, highest ?? 0),
+    )
   }, [data, highest])
 
   if (data.length === 0) {
@@ -138,39 +109,21 @@ function ProgressChartInner({ plays, highest }: ProgressChartProps) {
           <XAxis
             dataKey="time"
             padding={{ left: 28, right: 28 }}
-            tick={{
-              fill: 'var(--muted)',
-              fontSize: 13,
-              fontFamily: 'var(--font-display)',
-            }}
+            tick={{ ...chartAxisTick, fontSize: 13 }}
             tickLine={false}
             axisLine={{ stroke: 'var(--axis)' }}
           />
           <YAxis
             domain={[scale.yMin, scale.yMax]}
             ticks={scale.ticks}
-            tickFormatter={(v: number) =>
-              scale.fine || v >= 99.9 ? v.toFixed(2) : v.toFixed(1)
-            }
-            tick={{
-              fill: 'var(--muted)',
-              fontSize: 13,
-              fontFamily: 'var(--font-display)',
-            }}
+            tickFormatter={(v: number) => formatYTick(v, scale.fine)}
+            tick={{ ...chartAxisTick, fontSize: 13 }}
             tickLine={false}
             axisLine={{ stroke: 'var(--axis)' }}
             width={scale.fine ? 52 : 48}
           />
           <Tooltip
-            contentStyle={{
-              background: 'var(--panel)',
-              border: '1px solid var(--border)',
-              borderRadius: 10,
-              fontFamily: 'var(--font)',
-              fontSize: 13,
-              color: 'var(--ink)',
-              boxShadow: 'var(--shadow)',
-            }}
+            contentStyle={chartTooltipStyle}
             formatter={(value, _name, item) => {
               const point = item?.payload as Point | undefined
               const tag = point?.perfectPlay
@@ -186,21 +139,7 @@ function ProgressChartInner({ plays, highest }: ProgressChartProps) {
               return new Date(full).toLocaleString('ko-KR')
             }}
           />
-          {highest != null && (
-            <ReferenceLine
-              y={highest}
-              stroke="var(--record)"
-              strokeDasharray="6 4"
-              strokeWidth={1.5}
-              label={{
-                value: `Highest Record ${highest.toFixed(2)}%`,
-                position: 'insideTopRight',
-                fill: 'var(--record)',
-                fontSize: 12,
-                fontFamily: 'var(--font)',
-              }}
-            />
-          )}
+          {highest != null && <HighestReferenceLine highest={highest} />}
           <Line
             type="monotone"
             dataKey="accuracy"

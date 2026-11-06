@@ -67,6 +67,7 @@ export function Sidebar({
               <button
                 type="button"
                 className={`chart-item${active ? ' active' : ''}`}
+                data-button={c.button}
                 onClick={() => onSelect(c.id)}
               >
                 <span className="chart-item-label">

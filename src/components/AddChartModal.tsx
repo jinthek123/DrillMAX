@@ -220,33 +220,44 @@ export function AddChartModal({
           </p>
         </div>
 
-        <div className="field-row">
-          <label className="field">
-            <span>버튼</span>
-            <select
-              value={button}
-              onChange={(e) => setButton(e.target.value as ButtonMode)}
-            >
-              {buttonOptions.map((b) => (
-                <option key={b} value={b}>
+        <div className="field">
+          <span>버튼</span>
+          <div className="mode-chips" role="group" aria-label="버튼">
+            {ALL_BUTTONS.map((b) => {
+              const enabled = buttonOptions.includes(b)
+              return (
+                <button
+                  key={b}
+                  type="button"
+                  className={`mode-chip${button === b ? ' active' : ''}`}
+                  data-button={b}
+                  disabled={!enabled}
+                  onClick={() => setButton(b)}
+                >
                   {b}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>난이도</span>
-            <select
-              value={difficulty}
-              onChange={(e) => setDifficulty(e.target.value as Difficulty)}
-            >
-              {diffOptions.map((d) => (
-                <option key={d} value={d}>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+        <div className="field">
+          <span>난이도</span>
+          <div className="mode-chips" role="group" aria-label="난이도">
+            {ALL_DIFFS.map((d) => {
+              const enabled = diffOptions.includes(d)
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  className={`mode-chip${difficulty === d ? ' active' : ''}`}
+                  disabled={!enabled}
+                  onClick={() => setDifficulty(d)}
+                >
                   {d}
-                </option>
-              ))}
-            </select>
-          </label>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         <div className="modal-actions">

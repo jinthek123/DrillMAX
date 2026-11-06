@@ -8,7 +8,10 @@ import { AddChartModal } from './components/AddChartModal'
 import { ApiSetupModal } from './components/ApiSetupModal'
 import { BackupModal } from './components/BackupModal'
 import { ImportLogModal } from './components/ImportLogModal'
+import { AppTabs, type AppTabId } from './components/AppTabs'
 import { LiveBadge } from './components/LiveBadge'
+import { AiRecommendPanel } from './components/AiRecommendPanel'
+import { OverviewPanel } from './components/OverviewPanel'
 import { PlayPanel } from './components/PlayPanel'
 import { Sidebar } from './components/Sidebar'
 import {
@@ -17,7 +20,11 @@ import {
   saveSettings,
   type ThemeMode,
 } from './lib/settings'
-import { pickBackupDir, saveBackupToDir } from './lib/backup'
+import { pickBackupDir } from './lib/backup'
+import {
+  loadRhythmFormFile,
+  scheduleAutoPersist,
+} from './lib/autoPersist'
 import { useAppData } from './hooks/useAppData'
 import { resolveArchiveBest, useLiveBridge } from './hooks/useLiveBridge'
 import { useSongCatalog } from './hooks/useSongCatalog'
@@ -42,6 +49,7 @@ export default function App() {
     setArchiveBest,
     applyArchiveBests,
     importFromJsonText,
+    replaceAll,
   } = useAppData()
   const { songs, status: catalogStatus } = useSongCatalog()
 
@@ -50,10 +58,46 @@ export default function App() {
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
   const [backupOpen, setBackupOpen] = useState(false)
-  const [backupBusy, setBackupBusy] = useState(false)
   const [backupMsg, setBackupMsg] = useState<string | null>(null)
   const [liveEnabled, setLiveEnabled] = useState(true)
+  const [activeTab, setActiveTab] = useState<AppTabId>('overview')
+  const [hydrated, setHydrated] = useState(false)
   const archiveBestsRef = useRef<ArchiveBestMap | null>(null)
+
+  // Tauri: rhythmForm.json 자동 로드
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const fromFile = await loadRhythmFormFile(settings.backupDir || undefined)
+      if (!cancelled && fromFile && (fromFile.charts.length > 0 || fromFile.plays.length > 0)) {
+        replaceAll(fromFile)
+      }
+      if (!cancelled) setHydrated(true)
+    })()
+    return () => {
+      cancelled = true
+    }
+    // 최초 1회 + 폴더 변경 시
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.backupDir])
+
+  // Tauri: rhythmForm.json 자동 저장 (songs.json 정렬 레이블)
+  useEffect(() => {
+    if (!hydrated) return
+    scheduleAutoPersist(data, {
+      backupDir: settings.backupDir || undefined,
+      nickname: settings.nickname || undefined,
+      catalog: songs,
+    })
+  }, [data, settings.backupDir, settings.nickname, songs, hydrated])
+
+  const openChartTab = useCallback(
+    (id: string) => {
+      setSelectedId(id)
+      setActiveTab('chart')
+    },
+    [setSelectedId],
+  )
 
   useEffect(() => {
     applyTheme(settings.theme)
@@ -161,7 +205,7 @@ export default function App() {
         charts={sortedCharts}
         selectedId={selectedId}
         playCounts={playCounts}
-        onSelect={setSelectedId}
+        onSelect={openChartTab}
         onAdd={() => setAddOpen(true)}
         onDelete={deleteChart}
         onOpenApiSettings={() => setApiSetupOpen(true)}
@@ -182,36 +226,53 @@ export default function App() {
           />
         }
       />
-      <PlayPanel
-        chart={selectedChart}
-        plays={selectedPlays}
-        highest={highest}
-        latestPlay={latestPlay}
-        onAddPlay={(accuracy, playedAt, maxCombo) => {
-          if (!selectedChart) return
-          addPlay(selectedChart.id, accuracy, playedAt, {
-            maxCombo,
-            source: 'manual',
-          })
-        }}
-        onDeletePlay={deletePlay}
-        onOpenImport={() => setImportOpen(true)}
-        onExport={() => {
-          setBackupMsg(null)
-          setBackupOpen(true)
-        }}
-        onImportJson={(file) => {
-          const reader = new FileReader()
-          reader.onload = () => {
-            try {
-              importFromJsonText(String(reader.result ?? ''))
-            } catch {
-              alert('JSON을 읽지 못했습니다.')
-            }
-          }
-          reader.readAsText(file)
-        }}
-      />
+      <div className="workspace">
+        <AppTabs active={activeTab} onChange={setActiveTab} />
+        {activeTab === 'overview' && (
+          <OverviewPanel
+            data={data}
+            onOpenChart={openChartTab}
+            onOpenImport={() => setImportOpen(true)}
+            onExport={() => {
+              setBackupMsg(null)
+              setBackupOpen(true)
+            }}
+          />
+        )}
+        {activeTab === 'chart' && (
+          <PlayPanel
+            chart={selectedChart}
+            plays={selectedPlays}
+            highest={highest}
+            latestPlay={latestPlay}
+            onAddPlay={(accuracy, playedAt, maxCombo) => {
+              if (!selectedChart) return
+              addPlay(selectedChart.id, accuracy, playedAt, {
+                maxCombo,
+                source: 'manual',
+              })
+            }}
+            onDeletePlay={deletePlay}
+            onOpenImport={() => setImportOpen(true)}
+            onExport={() => {
+              setBackupMsg(null)
+              setBackupOpen(true)
+            }}
+            onImportJson={(file) => {
+              const reader = new FileReader()
+              reader.onload = () => {
+                try {
+                  importFromJsonText(String(reader.result ?? ''))
+                } catch {
+                  alert('JSON을 읽지 못했습니다.')
+                }
+              }
+              reader.readAsText(file)
+            }}
+          />
+        )}
+        {activeTab === 'ai' && <AiRecommendPanel />}
+      </div>
 
       <AddChartModal
         open={addOpen}
@@ -226,6 +287,7 @@ export default function App() {
               title,
             )
             if (cached != null) setArchiveBest(id, cached)
+            setActiveTab('chart')
           }
         }}
         songs={songs}
@@ -263,10 +325,8 @@ export default function App() {
       <BackupModal
         open={backupOpen}
         backupDir={settings.backupDir}
-        busy={backupBusy}
         message={backupMsg}
         onClose={() => {
-          if (backupBusy) return
           setBackupOpen(false)
           setBackupMsg(null)
         }}
@@ -278,39 +338,11 @@ export default function App() {
               const next = { ...settings, backupDir: dir }
               saveSettings(next)
               setSettings(next)
-              setBackupMsg(`폴더 지정됨: ${dir}`)
+              setBackupMsg(`자동 저장 폴더: ${dir}\\rhythmForm.json`)
             } catch (e) {
               setBackupMsg(
                 e instanceof Error ? e.message : '폴더를 선택하지 못했습니다.',
               )
-            }
-          })()
-        }}
-        onConfirm={() => {
-          void (async () => {
-            setBackupBusy(true)
-            setBackupMsg(null)
-            try {
-              let dir = settings.backupDir
-              if (!dir) {
-                const picked = await pickBackupDir()
-                if (!picked) {
-                  setBackupMsg('백업 폴더를 먼저 선택하세요.')
-                  return
-                }
-                dir = picked
-                const next = { ...settings, backupDir: dir }
-                saveSettings(next)
-                setSettings(next)
-              }
-              const path = await saveBackupToDir(data, dir)
-              setBackupMsg(`저장됨: ${path}`)
-            } catch (e) {
-              setBackupMsg(
-                e instanceof Error ? e.message : '백업 저장에 실패했습니다.',
-              )
-            } finally {
-              setBackupBusy(false)
             }
           })()
         }}
