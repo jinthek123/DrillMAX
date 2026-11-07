@@ -1,9 +1,7 @@
-# RhythmForm → DrillMAX 로 이름을 변경합니다. (1.1.0 부터 적용)
+# DrillMAX 로 이름을 변경합니다. (구 RhythmForm)
 
 **한 곡을 깎을 때, 지금의 폼을 한눈에 보기 위한 로컬 기록 도구**  
 for DJMAX RESPECT V
-
-**현재 1.0.n 단위로 자잘한 업데이트를 하고 있습니다. 정상적인 사용은 Release 에 배포된 exe 파일을 활용해주세요. 그 외 최신 개발 현황은 main에 업로드된 미완성본을 확인해주세요.**
 
 V-ARCHIVE 클라이언트에 표시되는 **로그 텍스트**를 읽어, 공식 갱신에서 버려지는 `[미갱신]` 플레이까지 포함해 로컬에 남깁니다.  
 정확도 추이를 그래프로 확인하며 0.01%를 깎는 과정과 결과를 시각적으로 파악할 수 있습니다.
@@ -13,8 +11,8 @@ V-ARCHIVE 클라이언트에 표시되는 **로그 텍스트**를 읽어, 공식
 
 [다운로드 (Releases)](https://github.com/jinthek123/DrillMAX/releases) · [버그·문의 (Issues)](https://github.com/jinthek123/DrillMAX/issues)
 
-<img width="1602" height="1063" alt="image" src="https://github.com/user-attachments/assets/63b32d01-b235-48ce-9d82-533beecca5b0" />
-<img width="1602" height="1063" alt="image" src="https://github.com/user-attachments/assets/95c9bc74-9b36-47cb-a266-a079ab2d67ff" />
+<img width="1602" height="1062" alt="image" src="https://github.com/user-attachments/assets/622afd30-f7be-412b-be5f-c830ded863d4" />
+<img width="1602" height="1062" alt="image" src="https://github.com/user-attachments/assets/6739b8fc-2b23-453d-aa92-4f6a084bb023" />
 
 
 ---
