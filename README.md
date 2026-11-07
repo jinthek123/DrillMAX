@@ -1,4 +1,4 @@
-# RhythmForm
+# RhythmForm → DrillMAX 로 이름을 변경합니다. (1.1.0 부터 적용)
 
 **한 곡을 깎을 때, 지금의 폼을 한눈에 보기 위한 로컬 기록 도구**  
 for DJMAX RESPECT V
