@@ -1,9 +1,12 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  archiveKey,
   fetchAllArchiveBests,
   lookupBest,
+  resolveArchiveBest,
   type ArchiveBestMap,
 } from './lib/archiveApi'
+import { shouldFetchArchiveBest } from './lib/archiveRefresh'
 import { AddChartModal } from './components/AddChartModal'
 import { ApiSetupModal } from './components/ApiSetupModal'
 import { BackupModal } from './components/BackupModal'
@@ -22,11 +25,11 @@ import {
 } from './lib/settings'
 import { pickBackupDir } from './lib/backup'
 import {
-  loadRhythmFormFile,
+  loadDrillMaxFile,
   scheduleAutoPersist,
 } from './lib/autoPersist'
 import { useAppData } from './hooks/useAppData'
-import { resolveArchiveBest, useLiveBridge } from './hooks/useLiveBridge'
+import { useLiveBridge } from './hooks/useLiveBridge'
 import { useSongCatalog } from './hooks/useSongCatalog'
 import type { LiveBridgeEvent } from './types'
 import './App.css'
@@ -64,11 +67,11 @@ export default function App() {
   const [hydrated, setHydrated] = useState(false)
   const archiveBestsRef = useRef<ArchiveBestMap | null>(null)
 
-  // Tauri: rhythmForm.json 자동 로드
+  // Tauri: drillMax.json 자동 로드
   useEffect(() => {
     let cancelled = false
     void (async () => {
-      const fromFile = await loadRhythmFormFile(settings.backupDir || undefined)
+      const fromFile = await loadDrillMaxFile(settings.backupDir || undefined)
       if (!cancelled && fromFile && (fromFile.charts.length > 0 || fromFile.plays.length > 0)) {
         replaceAll(fromFile)
       }
@@ -81,7 +84,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.backupDir])
 
-  // Tauri: rhythmForm.json 자동 저장 (songs.json 정렬 레이블)
+  // Tauri: drillMax.json 자동 저장 (songs.json 정렬 레이블)
   useEffect(() => {
     if (!hydrated) return
     scheduleAutoPersist(data, {
@@ -136,47 +139,79 @@ export default function App() {
     [data.charts],
   )
 
+  /** 네트워크로 해당 곡 PB 조회·반영 (캐시 즉시 반영 후 API 갱신) */
+  const refreshArchiveBest = useCallback(
+    (
+      chartId: string,
+      title: string,
+      button: LiveBridgeEvent['button'],
+      difficulty: LiveBridgeEvent['difficulty'],
+      nickname?: string | null,
+    ) => {
+      const cached = lookupBest(
+        archiveBestsRef.current,
+        button,
+        difficulty,
+        title,
+      )
+      if (cached != null) setArchiveBest(chartId, cached)
+
+      void (async () => {
+        const best = await resolveArchiveBest(
+          title,
+          button,
+          difficulty,
+          nickname || settings.nickname,
+        )
+        if (best == null) return
+        setArchiveBest(chartId, best)
+        const map = archiveBestsRef.current ?? new Map()
+        map.set(archiveKey(button, difficulty, title), best)
+        archiveBestsRef.current = map
+      })()
+    },
+    [setArchiveBest, settings.nickname],
+  )
+
   const onLiveEvent = useCallback(
     (ev: LiveBridgeEvent) => {
       const chartId = ingestLiveEvent(ev)
+      if (!chartId) return chartId
+
       const cached = lookupBest(
         archiveBestsRef.current,
         ev.button,
         ev.difficulty,
         ev.title,
       )
-      if (cached != null && chartId) {
+      const chartPb =
+        data.charts.find((c) => c.id === chartId)?.archiveBest ?? cached
+
+      if (shouldFetchArchiveBest(ev.status, chartPb)) {
+        refreshArchiveBest(
+          chartId,
+          ev.title,
+          ev.button,
+          ev.difficulty,
+          settings.nickname,
+        )
+      } else if (cached != null) {
         setArchiveBest(chartId, cached)
       }
       return chartId
     },
-    [ingestLiveEvent, setArchiveBest],
-  )
-
-  const onNeedArchiveBest = useCallback(
-    (chartId: string, ev: LiveBridgeEvent, nickname: string) => {
-      const cached = lookupBest(
-        archiveBestsRef.current,
-        ev.button,
-        ev.difficulty,
-        ev.title,
-      )
-      if (cached != null) {
-        setArchiveBest(chartId, cached)
-        return
-      }
-      void (async () => {
-        const best = await resolveArchiveBest(nickname, ev)
-        if (best != null) setArchiveBest(chartId, best)
-      })()
-    },
-    [setArchiveBest],
+    [
+      data.charts,
+      ingestLiveEvent,
+      setArchiveBest,
+      refreshArchiveBest,
+      settings.nickname,
+    ],
   )
 
   const { health, bridgeUp } = useLiveBridge({
     enabled: liveEnabled && settings.setupDone,
     onEvent: onLiveEvent,
-    onNeedArchiveBest,
   })
 
   const playCounts = useMemo(() => {
@@ -297,7 +332,19 @@ export default function App() {
       <ImportLogModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        onImport={(plays, dateYmd) => importLogPlays(plays, dateYmd)}
+        onImport={(plays, dateYmd) => {
+          const { added, needArchive } = importLogPlays(plays, dateYmd)
+          for (const t of needArchive) {
+            refreshArchiveBest(
+              t.chartId,
+              t.title,
+              t.button,
+              t.difficulty,
+              settings.nickname,
+            )
+          }
+          return { added }
+        }}
       />
 
       <ApiSetupModal
@@ -338,7 +385,7 @@ export default function App() {
               const next = { ...settings, backupDir: dir }
               saveSettings(next)
               setSettings(next)
-              setBackupMsg(`자동 저장 폴더: ${dir}\\rhythmForm.json`)
+              setBackupMsg(`자동 저장 폴더: ${dir}\\drillMax.json`)
             } catch (e) {
               setBackupMsg(
                 e instanceof Error ? e.message : '폴더를 선택하지 못했습니다.',

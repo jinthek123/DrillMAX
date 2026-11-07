@@ -21,7 +21,7 @@ use tower_http::cors::{Any, CorsLayer};
 
 static HTTP: Lazy<reqwest::Client> = Lazy::new(|| {
     reqwest::Client::builder()
-        .user_agent("RhythmForm/1.0")
+        .user_agent("DrillMAX/1.1.0")
         .timeout(Duration::from_secs(30))
         .build()
         .expect("http client")
@@ -480,7 +480,7 @@ pub async fn start_bridge(reader_path: PathBuf, port: u16, poll_ms: u64) -> Resu
         .map_err(|e| format!("브리지 포트 {port} bind 실패: {e}"))?;
 
     eprintln!(
-        "[rhythmform-bridge] http://127.0.0.1:{port} reader={}",
+        "[drillmax-bridge] http://127.0.0.1:{port} reader={}",
         reader_path.display()
     );
 

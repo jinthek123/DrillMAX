@@ -10,6 +10,7 @@ import {
 } from 'recharts'
 import type { DailyBest } from '../types'
 import {
+  EMPTY_Y_SCALE,
   buildYScale,
   chartAxisTick,
   chartTooltipStyle,
@@ -68,9 +69,7 @@ function DailyBestSparklineInner({
     const vals = data
       .map((d) => d.accuracy)
       .filter((v): v is number => v != null)
-    if (vals.length === 0) {
-      return { yMin: 0, yMax: 100, ticks: undefined, fine: false }
-    }
+    if (vals.length === 0) return EMPTY_Y_SCALE
     return buildYScale(Math.min(...vals), Math.max(...vals, highest ?? 0))
   }, [data, highest])
 

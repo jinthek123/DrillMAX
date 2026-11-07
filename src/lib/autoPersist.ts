@@ -7,13 +7,10 @@ import {
 } from '@tauri-apps/plugin-fs'
 import type { AppData } from '../types'
 import type { SongEntry } from './songCatalog'
+import { isTauri } from './bridgeUrl'
 import { readAppDataJson, writeAppDataJson } from './persist'
 
-const FILE_NAME = 'rhythmForm.json'
-
-function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
-}
+const FILE_NAME = 'drillMax.json'
 
 function joinPath(dir: string, file: string): string {
   const trimmed = dir.replace(/[/\\]+$/, '')
@@ -32,7 +29,7 @@ export async function resolvePersistPath(
   return { path: FILE_NAME, baseDir: BaseDirectory.AppData }
 }
 
-export async function loadRhythmFormFile(
+export async function loadDrillMaxFile(
   backupDir?: string,
 ): Promise<AppData | null> {
   if (!isTauri()) return null
@@ -54,7 +51,7 @@ export async function loadRhythmFormFile(
   }
 }
 
-export async function saveRhythmFormFile(
+export async function saveDrillMaxFile(
   data: AppData,
   opts?: {
     backupDir?: string
@@ -62,10 +59,7 @@ export async function saveRhythmFormFile(
     catalog?: SongEntry[]
   },
 ): Promise<string | null> {
-  if (!isTauri()) {
-    // 브라우저: localStorage 는 별도로 유지. 파일 자동저장은 Tauri 전용.
-    return null
-  }
+  if (!isTauri()) return null
 
   const json = writeAppDataJson(data, {
     nickname: opts?.nickname,
@@ -117,7 +111,7 @@ export function scheduleAutoPersist(
     pending = null
     timer = null
     if (!job) return
-    void saveRhythmFormFile(job.data, job).catch(() => {
+    void saveDrillMaxFile(job.data, job).catch(() => {
       /* 자동저장 실패는 UI를 막지 않음 */
     })
   }, 600)

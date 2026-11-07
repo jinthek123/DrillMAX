@@ -45,7 +45,8 @@ export function buildChartOverview(data: AppData): ChartOverviewRow[] {
     const accuracies = plays.map((p) => p.accuracy)
     const best = accuracies.length > 0 ? Math.max(...accuracies) : null
     const archiveBest = chart.archiveBest ?? null
-    const highest = computeHighest(accuracies, archiveBest)
+    // Highest: 미갱신 점수 제외 + archive PB
+    const highest = computeHighest(plays, archiveBest)
     let ppCount = 0
     let mcCount = 0
     let pendingCount = 0

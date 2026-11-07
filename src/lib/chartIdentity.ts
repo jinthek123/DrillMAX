@@ -1,13 +1,5 @@
 import type { ButtonMode, Chart, Difficulty } from '../types'
 
-export function chartKey(
-  title: string,
-  button: ButtonMode,
-  difficulty: Difficulty,
-): string {
-  return `${button}|${difficulty}|${title}`
-}
-
 export function findChart(
   charts: Chart[],
   title: string,

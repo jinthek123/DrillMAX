@@ -24,19 +24,19 @@ pub fn run() {
             let reader = bridge::resolve_reader_path(&resource_dir);
             if !reader.is_file() {
                 eprintln!(
-                    "[rhythmform] IeHtmlReader not found at {} — LIVE disabled until present",
+                    "[drillmax] IeHtmlReader not found at {} — LIVE disabled until present",
                     reader.display()
                 );
             }
 
             tauri::async_runtime::spawn(async move {
                 if let Err(e) = bridge::start_bridge(reader, 5174, 900).await {
-                    eprintln!("[rhythmform-bridge] {e}");
+                    eprintln!("[drillmax-bridge] {e}");
                 }
             });
 
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("error while running RhythmForm");
+        .expect("error while running DrillMAX");
 }

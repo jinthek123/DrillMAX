@@ -1,7 +1,8 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import type { Chart, Play } from '../types'
 import { isPerfectPlay } from '../types'
 import { formatChartLabel, formatDateTime } from '../lib/parseLog'
+import { PLAY_KEEP_PER_CHART } from '../lib/dailyBest'
 import { ProgressChart } from './ProgressChart'
 
 interface PlayPanelProps {
@@ -45,7 +46,7 @@ export function PlayPanel({
     return (
       <main className="main empty-main">
         <div className="empty-hero">
-          <h1>RhythmForm</h1>
+          <h1>DrillMAX</h1>
           <p>
             LIVE를 켜 두면 V-ARCHIVE 캡쳐+업로드 직후 로그를 읽어
             [미갱신] 플레이까지 자동으로 기록합니다.
@@ -71,10 +72,12 @@ export function PlayPanel({
             {chart.button} {chart.difficulty}
           </p>
           <h1>{chart.title}</h1>
-          <p className="main-meta">{plays.length}회 기록</p>
+          <p className="main-meta">
+            {plays.length}회 기록 · 최근 최대 {PLAY_KEEP_PER_CHART}회
+          </p>
           <div className="scoreboard">
             <div className="score-card record">
-              <span className="score-label">Highest Record</span>
+              <span className="score-label">HR</span>
               <span className="score-value mono">
                 {highest != null ? `${highest.toFixed(2)}%` : '—'}
               </span>
@@ -119,7 +122,7 @@ export function PlayPanel({
       <section className="chart-section" aria-label="Accuracy">
         <div className="chart-legend">
           <span className="legend-score">모든 기록</span>
-          <span className="legend-record">Highest Record</span>
+          <span className="legend-record">HR</span>
         </div>
         <ProgressChart plays={plays} highest={highest} />
       </section>

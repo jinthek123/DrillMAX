@@ -1,11 +1,18 @@
 import type { CSSProperties } from 'react'
 import { round2 } from './math'
 
-export type YScale = {
+type YScale = {
   yMin: number
   yMax: number
   ticks: number[] | undefined
   fine: boolean
+}
+
+export const EMPTY_Y_SCALE: YScale = {
+  yMin: 0,
+  yMax: 100,
+  ticks: undefined,
+  fine: false,
 }
 
 /** 단일 곡 / 전체 성과 공통 Y축 스케일 */

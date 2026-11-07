@@ -1,4 +1,6 @@
-﻿import type { ReactNode } from 'react'
+﻿import { ask } from '@tauri-apps/plugin-dialog'
+import { useState, type ReactNode } from 'react'
+import { isTauri } from '../lib/bridgeUrl'
 import type { ThemeMode } from '../lib/settings'
 import type { Chart } from '../types'
 import { formatChartLabel } from '../lib/parseLog'
@@ -29,13 +31,15 @@ export function Sidebar({
   onThemeChange,
   liveSlot,
 }: SidebarProps) {
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+
   return (
     <aside className="sidebar">
       <div className="sidebar-head">
         <div className="brand-row">
-          <img className="brand-icon" src="./icon.png" alt="" />
+          <img className="brand-icon" src="./favicon.svg" alt="" />
           <div>
-            <span className="brand">RhythmForm</span>
+            <span className="brand">DrillMAX</span>
             <p className="brand-sub">for DJMAX RESPECT V</p>
           </div>
         </div>
@@ -82,14 +86,25 @@ export function Sidebar({
                   type="button"
                   className="chart-delete"
                   title="차트 삭제"
+                  disabled={confirmingId != null}
                   onClick={() => {
-                    if (
-                      confirm(
-                        `"${c.title}" 차트와 기록을 모두 삭제할까요?`,
-                      )
-                    ) {
-                      onDelete(c.id)
-                    }
+                    if (confirmingId) return
+                    const id = c.id
+                    const message = `"${c.title}" 차트와 기록을 모두 삭제할까요?`
+                    setConfirmingId(id)
+                    const pending = isTauri()
+                      ? ask(message, {
+                          title: '차트 삭제',
+                          kind: 'warning',
+                          okLabel: '삭제',
+                          cancelLabel: '취소',
+                        })
+                      : Promise.resolve(window.confirm(message))
+                    void pending
+                      .then((ok) => {
+                        if (ok) onDelete(id)
+                      })
+                      .finally(() => setConfirmingId(null))
                   }}
                 >
                   삭제

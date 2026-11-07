@@ -25,7 +25,7 @@ export function BackupModal({
       >
         <h2 id="backup-title">데이터 폴더</h2>
         <p className="modal-hint">
-          성적은 <code>rhythmForm.json</code> 으로 자동 저장됩니다. 폴더를
+          성적은 <code>drillMax.json</code> 으로 자동 저장됩니다. 폴더를
           지정하면 그 위치에, 없으면 앱 데이터 폴더에 저장합니다.
         </p>
 

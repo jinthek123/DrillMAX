@@ -1,9 +1,9 @@
 {
-  "name": "rhythmform",
+  "name": "drillmax",
   "private": true,
-  "version": "1.0.1",
-  "description": "V-ARCHIVE 미갱신 플레이까지 로컬 기록하는 RhythmForm",
-  "author": "RhythmForm",
+  "version": "1.1.0",
+  "description": "V-ARCHIVE 미갱신 플레이까지 로컬 기록하는 DrillMAX",
+  "author": "DrillMAX",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",

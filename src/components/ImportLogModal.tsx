@@ -1,11 +1,14 @@
-﻿import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { parseVArchiveLog } from '../lib/parseLog'
 import type { ParsedLogPlay } from '../types'
 
 interface ImportLogModalProps {
   open: boolean
   onClose: () => void
-  onImport: (plays: ParsedLogPlay[], dateYmd: string) => number
+  onImport: (
+    plays: ParsedLogPlay[],
+    dateYmd: string,
+  ) => number | { added: number }
 }
 
 export function ImportLogModal({ open, onClose, onImport }: ImportLogModalProps) {
@@ -84,7 +87,8 @@ export function ImportLogModal({ open, onClose, onImport }: ImportLogModalProps)
             className="btn-primary"
             disabled={preview.length === 0}
             onClick={() => {
-              const n = onImport(preview, dateYmd)
+              const result = onImport(preview, dateYmd)
+              const n = typeof result === 'number' ? result : result.added
               const skipped = preview.length - n
               if (n === 0 && skipped > 0) {
                 setMessage(

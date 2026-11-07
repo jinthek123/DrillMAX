@@ -11,7 +11,7 @@ V-ARCHIVE 클라이언트에 표시되는 **로그 텍스트**를 읽어, 공식
 > **Unofficial fan-made tool.** DJMAX RESPECT V 및 관련 상표·저작물의 권리는 (주)네오위즈에 있습니다.  
 > 본 프로그램은 네오위즈와 무관한 비공식 팬메이드 도구입니다.
 
-[다운로드 (Releases)](https://github.com/jinthek123/rhythmForm/releases) · [버그·문의 (Issues)](https://github.com/jinthek123/rhythmForm/issues)
+[다운로드 (Releases)](https://github.com/jinthek123/DrillMAX/releases) · [버그·문의 (Issues)](https://github.com/jinthek123/DrillMAX/issues)
 
 <img width="1602" height="1063" alt="image" src="https://github.com/user-attachments/assets/63b32d01-b235-48ce-9d82-533beecca5b0" />
 <img width="1602" height="1063" alt="image" src="https://github.com/user-attachments/assets/95c9bc74-9b36-47cb-a266-a079ab2d67ff" />
@@ -24,7 +24,7 @@ V-ARCHIVE 클라이언트에 표시되는 **로그 텍스트**를 읽어, 공식
 한 곡을 반복해서 깎다 보면 폼이 떨어지는 구간이 생기고, **최고 기록이 아닌 시도**도 쌓입니다.  
 그런데 V-ARCHIVE에는 갱신되지 않은(미갱신) 점수나, 최고가 아닌 중간 성과를 한곳에 모아 보기 어렵습니다.
 
-RhythmForm은 그 간극을 메우기 위해 만들었습니다. LIVE로 로그를 따라가며 기록을 남기고, Accuracy / Highest Record 그래프로 **지금의 폼**을 객관적으로 보게 합니다.
+DrillMAX는 그 간극을 메우기 위해 만들었습니다. LIVE로 로그를 따라가며 기록을 남기고, Accuracy / Highest Record 그래프로 **지금의 폼**을 객관적으로 보게 합니다.
 
 ※ 사용 시 **V-ARCHIVE 클라이언트**를 켜 두는 것을 권장합니다.
 
@@ -54,7 +54,7 @@ RhythmForm은 그 간극을 메우기 위해 만들었습니다. LIVE로 로그�
 
 ### 2. LIVE 연결
 
-V-ARCHIVE 클라이언트를 실행하면 RhythmForm 좌측 상단에 **LIVE ON**이 표시됩니다.  
+V-ARCHIVE 클라이언트를 실행하면 DrillMAX 좌측 상단에 **LIVE ON**이 표시됩니다.  
 연결이 정상이면 캡쳐·업로드 직후 로그에 남는 플레이가 자동으로 기록됩니다.
 
 ### 3. 차트 추가 (선택)
@@ -72,7 +72,7 @@ LIVE가 켜져 있으면 새 곡이 로그에 잡힐 때 차트가 자동으로 
 
 ### 5. 로그 가져오기
 
-RhythmForm을 켜지 못한 채 플레이했다면, **로그 가져오기**에 V-ARCHIVE 클라이언트 로그를 붙여넣어 보완할 수 있습니다.
+DrillMAX를 켜지 못한 채 플레이했다면, **로그 가져오기**에 V-ARCHIVE 클라이언트 로그를 붙여넣어 보완할 수 있습니다.
 
 ### 6. 백업
 
@@ -85,18 +85,18 @@ RhythmForm을 켜지 못한 채 플레이했다면, **로그 가져오기**에 V
 
 | 구분 | 링크 |
 |------|------|
-| 설치본 | [Releases · v1.0.0](https://github.com/jinthek123/rhythmForm/releases/tag/v1.0.0) |
+| 설치본 | [Releases · v1.1.0](https://github.com/jinthek123/DrillMAX/releases/tag/v1.1.0) |
 | 요구 환경 | Windows 10/11, [WebView2](https://developer.microsoft.com/microsoft-edge/webview2/) (대부분 기본 포함) |
 
-설치본: `RhythmForm_1.0.0_x64-setup.exe`
+설치본: `DrillMAX_1.1.0_x64-setup.exe`
 
 ---
 
 ## 버그·문의
 
-문제 재현 방법, 화면 캡처, RhythmForm / V-ARCHIVE 버전을 남겨 주시면 확인에 도움이 됩니다.
+문제 재현 방법, 화면 캡처, DrillMAX / V-ARCHIVE 버전을 남겨 주시면 확인에 도움이 됩니다.
 
-→ [GitHub Issues](https://github.com/jinthek123/rhythmForm/issues)
+→ [GitHub Issues](https://github.com/jinthek123/DrillMAX/issues)
 
 ---
 

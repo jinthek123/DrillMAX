@@ -1,15 +1,10 @@
 import type { AppData, DailyBest, Play } from '../types'
+import { localDateKey } from './dates'
 import { round2 } from './math'
 
 export const DAILY_BEST_KEEP_DAYS = 30
-
-export function localDateKey(input: Date | string = new Date()): string {
-  const d = typeof input === 'string' ? new Date(input) : input
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
+/** 단일 곡 그래프·목록에 남기는 최대 플레이 수 (초과 시 오래된 것부터 삭제) */
+export const PLAY_KEEP_PER_CHART = 15
 
 /** 0.00% 이하는 기록으로 취급하지 않음 */
 export function isDiscardAccuracy(accuracy: number): boolean {
@@ -54,10 +49,31 @@ export function upsertDailyBest(
   return trimDailyBests(list)
 }
 
-/**
- * 단일 곡 기록: 플레이는 전부 보관.
- * 전체 성과용 Daily Best만 날짜별 최고로 갱신.
- */
+/** 차트별 최근 N개만 유지 (playedAt 오름차순 기준 앞에서 삭제) */
+export function trimPlaysPerChart(
+  plays: Play[],
+  keepPerChart = PLAY_KEEP_PER_CHART,
+): Play[] {
+  const byChart = new Map<string, Play[]>()
+  for (const p of plays) {
+    const list = byChart.get(p.chartId)
+    if (list) list.push(p)
+    else byChart.set(p.chartId, [p])
+  }
+  const out: Play[] = []
+  for (const list of byChart.values()) {
+    list.sort(
+      (a, b) =>
+        new Date(a.playedAt).getTime() - new Date(b.playedAt).getTime(),
+    )
+    const kept =
+      list.length > keepPerChart ? list.slice(list.length - keepPerChart) : list
+    out.push(...kept)
+  }
+  return out
+}
+
+/** 단일 곡은 최근 15판만 남기고, Daily Best는 30일 창에 새 플레이를 반영한다. */
 export function appendPlay(
   data: AppData,
   play: Play,
@@ -65,14 +81,36 @@ export function appendPlay(
   if (isDiscardAccuracy(play.accuracy)) {
     return { data, accepted: false }
   }
+  const plays = trimPlaysPerChart([...data.plays, play])
   return {
     accepted: true,
     data: {
       ...data,
-      plays: [...data.plays, play],
+      plays,
       dailyBests: upsertDailyBest(data.dailyBests, play),
     },
   }
+}
+
+function preferDailyBest(a: DailyBest, b: DailyBest): DailyBest {
+  return round2(b.accuracy) > round2(a.accuracy) ? b : a
+}
+
+/** 같은 차트·날짜는 더 높은 정확도만 남기고, 30일 밖은 제거 */
+function mergeDailyBests(
+  ...lists: Array<DailyBest[] | undefined>
+): DailyBest[] {
+  const map = new Map<string, DailyBest>()
+  for (const list of lists) {
+    for (const row of list ?? []) {
+      if (!row.chartId || !row.date || isDiscardAccuracy(row.accuracy)) continue
+      const next = { ...row, accuracy: round2(row.accuracy) }
+      const key = dayKey(row.chartId, row.date)
+      const prev = map.get(key)
+      map.set(key, prev ? preferDailyBest(prev, next) : next)
+    }
+  }
+  return trimDailyBests([...map.values()])
 }
 
 export function trimDailyBests(
@@ -89,22 +127,33 @@ export function trimDailyBests(
     })
 }
 
-/** 차트 삭제·정리: orphan play 제거 후 Daily Best 재계산. 플레이 히스토리는 유지. */
+/**
+ * 차트 삭제·정리.
+ * 플레이가 있는 날은 그 플레이의 최고점, 15판 제한으로 빠진 날은 저장된 Daily Best를 유지.
+ * Daily Best는 최근 30일, 단일 곡 플레이는 차트당 최근 15개.
+ */
 export function sanitizeAppData(data: AppData): AppData {
   const chartIds = new Set(data.charts.map((c) => c.id))
-  const plays = data.plays.filter(
+  const playsIn = data.plays.filter(
     (p) => chartIds.has(p.chartId) && !isDiscardAccuracy(p.accuracy),
   )
+  const playDays = new Set(
+    playsIn.map((p) => dayKey(p.chartId, localDateKey(p.playedAt))),
+  )
+  const stored = (data.dailyBests ?? []).filter((d) => {
+    if (!d.chartId || !chartIds.has(d.chartId)) return false
+    return !playDays.has(dayKey(d.chartId, d.date))
+  })
   return {
     ...data,
-    plays,
-    dailyBests: rebuildDailyBestsFromPlays(plays),
+    plays: trimPlaysPerChart(playsIn),
+    dailyBests: mergeDailyBests(stored, rebuildDailyBestsFromPlays(playsIn)),
     suppressedKeys: data.suppressedKeys,
   }
 }
 
 /** 플레이에서 차트별 Daily Best 복원 (월간 그래프용, 날짜당 최고만) */
-export function rebuildDailyBestsFromPlays(plays: Play[]): DailyBest[] {
+function rebuildDailyBestsFromPlays(plays: Play[]): DailyBest[] {
   const map = new Map<string, DailyBest>()
   for (const p of plays) {
     if (isDiscardAccuracy(p.accuracy)) continue
@@ -182,7 +231,7 @@ export function dailyBestSeriesForChart(
   return out
 }
 
-/** 로드·가져오기 시 plays 기준으로 Daily Best 재동기화 */
+/** 로드·가져오기 시 플레이와 저장된 Daily Best를 함께 정리 */
 export function normalizeAppData(data: AppData): AppData {
   const charts = Array.isArray(data.charts) ? data.charts : []
   const plays = (Array.isArray(data.plays) ? data.plays : []).filter(
@@ -191,7 +240,7 @@ export function normalizeAppData(data: AppData): AppData {
   return sanitizeAppData({
     charts,
     plays,
-    dailyBests: [],
+    dailyBests: Array.isArray(data.dailyBests) ? data.dailyBests : [],
     suppressedKeys: Array.isArray(data.suppressedKeys)
       ? data.suppressedKeys
       : undefined,

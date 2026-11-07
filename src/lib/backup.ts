@@ -1,14 +1,11 @@
 import { open } from '@tauri-apps/plugin-dialog'
 import { writeTextFile } from '@tauri-apps/plugin-fs'
 import type { AppData } from '../types'
+import { isTauri } from './bridgeUrl'
 import { exportJson } from './storage'
 
-function isTauri(): boolean {
-  return typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
-}
-
 export function defaultBackupName(): string {
-  return `rhythmform-backup-${new Date().toISOString().slice(0, 10)}.json`
+  return `drillmax-backup-${new Date().toISOString().slice(0, 10)}.json`
 }
 
 function joinPath(dir: string, file: string): string {

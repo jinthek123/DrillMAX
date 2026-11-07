@@ -1,7 +1,7 @@
 import { ReferenceLine } from 'recharts'
 
-/** ReferenceLine shape: 전체 가로 대신 좌측 짧은 Highest 선 */
-export function shortHighestShape(props: {
+/** ReferenceLine shape: 좌측 짧은 선 + HR (선 위에 두어 그래프에 안 가림) */
+function shortHighestShape(props: {
   x1?: number
   y1?: number
   x2?: number
@@ -22,7 +22,9 @@ export function shortHighestShape(props: {
   }
 
   const left = Math.min(x1, x2)
-  const xEnd = left + 36
+  const xEnd = left + 28
+  // 점수 선과 겹치지 않게 문구는 선 위(상단이면 아래)
+  const labelY = y1 >= 16 ? y1 - 10 : y1 + 12
 
   return (
     <g className="highest-mark" pointerEvents="none">
@@ -37,20 +39,20 @@ export function shortHighestShape(props: {
       />
       <text
         x={xEnd + 5}
-        y={y1}
+        y={labelY}
         fill={stroke}
         fontSize={11}
         fontFamily="var(--font)"
-        fontWeight={600}
+        fontWeight={700}
         dominantBaseline="middle"
       >
-        Highest
+        HR
       </text>
     </g>
   )
 }
 
-/** 짧은 Highest 기준선 (단일 곡 / 전체 성과 공통) */
+/** 짧은 HR 기준선 (단일 곡 / 전체 성과 공통) */
 export function HighestReferenceLine({ highest }: { highest: number }) {
   return (
     <ReferenceLine

@@ -1,7 +1,7 @@
 ﻿import { readAppDataJson, writeAppDataJson } from './persist'
 import type { AppData } from '../types'
 
-const STORAGE_KEY = 'rhythmform-data-v1'
+const STORAGE_KEY = 'drillmax-data-v1'
 
 const EMPTY: AppData = { charts: [], plays: [], dailyBests: [] }
 

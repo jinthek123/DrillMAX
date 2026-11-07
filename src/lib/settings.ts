@@ -9,7 +9,7 @@ export interface AppSettings {
   backupDir: string
 }
 
-const KEY = 'rhythmform-settings-v1'
+const KEY = 'drillmax-settings-v1'
 
 const EMPTY: AppSettings = {
   apiToken: '',

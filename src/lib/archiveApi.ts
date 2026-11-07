@@ -1,4 +1,5 @@
-﻿import { archiveUrl } from './bridgeUrl'
+import { archiveUrl } from './bridgeUrl'
+import { loadSettings } from './settings'
 import type { ButtonMode, Difficulty } from '../types'
 
 export interface ArchiveRecord {
@@ -158,12 +159,34 @@ export async function fetchArchiveBest(
   const { records } = await fetchButtonRecords(button, {
     ...opts,
   })
-  const hit = records.find(
-    (r) =>
-      r.name === title && String(r.pattern).toUpperCase() === difficulty,
-  )
-  if (!hit || typeof hit.score !== 'number') return null
-  return Math.round(hit.score * 100) / 100
+  const want = title.trim()
+  let best: number | null = null
+  for (const r of records) {
+    if (!r.name || typeof r.score !== 'number') continue
+    if (r.name.trim() !== want) continue
+    if (String(r.pattern || '').toUpperCase() !== difficulty) continue
+    const score = Math.round(r.score * 100) / 100
+    if (best == null || score > best) best = score
+  }
+  return best
+}
+
+/** settings + nickname으로 단일 차트 PB 조회 (실패 시 null) */
+export async function resolveArchiveBest(
+  title: string,
+  button: ButtonMode,
+  difficulty: Difficulty,
+  nickname?: string | null,
+): Promise<number | null> {
+  try {
+    const settings = loadSettings()
+    return await fetchArchiveBest(title, button, difficulty, {
+      token: settings.apiToken || undefined,
+      nickname: settings.nickname || nickname || undefined,
+    })
+  } catch {
+    return null
+  }
 }
 
 export function lookupBest(

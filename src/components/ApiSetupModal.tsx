@@ -68,7 +68,7 @@ export function ApiSetupModal({
         <p className="modal-hint">
           클라이언트 로그만으로는 예전에 저장해 둔 최고기록(예: 99.67%)을 알 수
           없습니다. V-ARCHIVE 마이페이지에서 발급한{' '}
-          <strong>Open API 조회 토큰</strong>을 넣으면 RhythmForm이 PB를
+          <strong>Open API 조회 토큰</strong>을 넣으면 DrillMAX가 PB를
           불러옵니다.
         </p>
 

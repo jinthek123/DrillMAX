@@ -7,11 +7,11 @@ import type {
   Play,
 } from '../types'
 import type { SongEntry } from './songCatalog'
-import { isDiscardAccuracy, rebuildDailyBestsFromPlays } from './dailyBest'
+import { isDiscardAccuracy } from './dailyBest'
 import { round2 } from './math'
 
-/** V-ARCHIVE songs.json 과 맞춘 패턴 필드 + RhythmForm 성적 */
-export interface RhythmFormPattern {
+/** V-ARCHIVE songs.json 과 맞춘 패턴 필드 + DrillMax 성적 */
+export interface DrillMaxPattern {
   level?: number
   floor?: number | null
   floorName?: string | null
@@ -40,24 +40,24 @@ export interface RhythmFormPattern {
   }>
 }
 
-export interface RhythmFormSong {
+export interface DrillMaxSong {
   /** songs.json 의 title (곡 ID). 모르면 null */
   title: number | null
   name: string
   composer: string
   dlcCode: string
   patterns: Partial<
-    Record<ButtonMode, Partial<Record<Difficulty, RhythmFormPattern>>>
+    Record<ButtonMode, Partial<Record<Difficulty, DrillMaxPattern>>>
   >
 }
 
-export interface RhythmFormFile {
+export interface DrillMaxFile {
   version: 1
   updatedAt: string
   nickname?: string
   /** 삭제된 LIVE/로그 플레이 지문 (재수집 방지) */
   suppressedKeys?: string[]
-  songs: RhythmFormSong[]
+  songs: DrillMaxSong[]
 }
 
 const BUTTONS: ButtonMode[] = ['4B', '5B', '6B', '8B']
@@ -79,11 +79,11 @@ function catalogByName(songs: SongEntry[]): Map<string, SongEntry> {
   return map
 }
 
-/** AppData → songs.json 스타일 rhythmForm.json */
-export function toRhythmFormFile(
+/** AppData → songs.json 스타일 DrillMax.json */
+export function toDrillMaxFile(
   data: AppData,
   opts?: { nickname?: string; catalog?: SongEntry[] },
-): RhythmFormFile {
+): DrillMaxFile {
   const cat = catalogByName(opts?.catalog ?? [])
   const playsByChart = new Map<string, Play[]>()
   for (const p of data.plays) {
@@ -98,7 +98,7 @@ export function toRhythmFormFile(
     else dailyByChart.set(d.chartId, [d])
   }
 
-  const songMap = new Map<string, RhythmFormSong>()
+  const songMap = new Map<string, DrillMaxSong>()
 
   for (const chart of data.charts) {
     const key = chart.title.trim().toLowerCase()
@@ -182,10 +182,11 @@ export function toRhythmFormFile(
   }
 }
 
-/** rhythmForm.json → AppData */
-export function fromRhythmFormFile(file: RhythmFormFile): AppData {
+/** DrillMax.json → AppData */
+export function fromDrillMaxFile(file: DrillMaxFile): AppData {
   const charts: Chart[] = []
   const plays: Play[] = []
+  const dailyBests: DailyBest[] = []
 
   for (const song of file.songs ?? []) {
     const name = song.name?.trim()
@@ -252,11 +253,21 @@ export function fromRhythmFormFile(file: RhythmFormFile): AppData {
             source: 'log',
           })
         }
+
+        for (const row of pat.dailyBests ?? []) {
+          const score = round2(row.score)
+          if (!row.date || isDiscardAccuracy(score)) continue
+          dailyBests.push({
+            date: row.date,
+            chartId: id,
+            accuracy: score,
+            updatedAt: row.updatedAt || `${row.date}T12:00:00.000Z`,
+          })
+        }
       }
     }
   }
 
-  const dailyBests = rebuildDailyBestsFromPlays(plays)
   return {
     charts,
     plays,
@@ -267,16 +278,16 @@ export function fromRhythmFormFile(file: RhythmFormFile): AppData {
   }
 }
 
-/** 구 AppData JSON 또는 rhythmForm.json 모두 수용 */
+/** 구 AppData JSON 또는 DrillMax.json 모두 수용 */
 export function parsePersistedJson(raw: string): AppData {
-  const parsed = JSON.parse(raw) as AppData | RhythmFormFile
+  const parsed = JSON.parse(raw) as AppData | DrillMaxFile
   if (
     parsed &&
     typeof parsed === 'object' &&
     'songs' in parsed &&
-    Array.isArray((parsed as RhythmFormFile).songs)
+    Array.isArray((parsed as DrillMaxFile).songs)
   ) {
-    return fromRhythmFormFile(parsed as RhythmFormFile)
+    return fromDrillMaxFile(parsed as DrillMaxFile)
   }
   const legacy = parsed as AppData
   if (!Array.isArray(legacy.charts) || !Array.isArray(legacy.plays)) {
@@ -292,6 +303,6 @@ export function parsePersistedJson(raw: string): AppData {
   }
 }
 
-export function stringifyRhythmForm(file: RhythmFormFile): string {
+export function stringifyDrillMax(file: DrillMaxFile): string {
   return JSON.stringify(file, null, 2)
 }

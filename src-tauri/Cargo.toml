@@ -1,12 +1,12 @@
 [package]
-name = "rhythmform"
-version = "1.0.1"
-description = "RhythmForm — local V-ARCHIVE play tracker"
-authors = ["RhythmForm"]
+name = "drillmax"
+version = "1.1.0"
+description = "DrillMAX — local V-ARCHIVE play tracker"
+authors = ["DrillMAX"]
 edition = "2021"
 
 [lib]
-name = "rhythmform_lib"
+name = "drillmax_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

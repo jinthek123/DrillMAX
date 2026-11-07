@@ -1,29 +1,48 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0.2" y2="1">
-      <stop offset="0%" stop-color="#24103F"/>
-      <stop offset="100%" stop-color="#0D0618"/>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.15" y2="1">
+      <stop offset="0%" stop-color="#2A1248"/>
+      <stop offset="100%" stop-color="#120818"/>
     </linearGradient>
-    <linearGradient id="line" x1="0" y1="1" x2="1" y2="0">
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#FFE566"/>
-      <stop offset="100%" stop-color="#F0B400"/>
+      <stop offset="100%" stop-color="#E6A400"/>
     </linearGradient>
   </defs>
   <rect width="128" height="128" rx="28" fill="url(#bg)"/>
-  <!-- axes -->
-  <path d="M28 96 H100 M28 96 V32" stroke="#5A3D7A" stroke-width="3" stroke-linecap="round" fill="none"/>
-  <!-- do mi re fa sol — rise, dip, rise, rise -->
+
+  <!-- score line, last point sits under the bit -->
   <polyline
-    points="34,90 50,58 66,72 82,46 100,30"
+    points="16,110 36,94 50,104 64,84 73,98"
     fill="none"
-    stroke="url(#line)"
-    stroke-width="6"
+    stroke="#F5C518"
+    stroke-width="8"
     stroke-linecap="round"
     stroke-linejoin="round"
   />
-  <circle cx="34" cy="90" r="5" fill="#F5C518"/>
-  <circle cx="50" cy="58" r="5" fill="#F5C518"/>
-  <circle cx="66" cy="72" r="5" fill="#F5C518"/>
-  <circle cx="82" cy="46" r="5" fill="#F5C518"/>
-  <circle cx="100" cy="30" r="6.5" fill="#FF2D95"/>
+  <circle cx="16" cy="110" r="5.5" fill="#F5C518"/>
+  <circle cx="36" cy="94" r="5" fill="#F5C518"/>
+  <circle cx="50" cy="104" r="5" fill="#F5C518"/>
+
+  <!-- handle under the rear of the body -->
+  <rect x="86" y="34" width="18" height="32" rx="8" fill="#C47A00"/>
+  <!-- motor -->
+  <rect x="28" y="14" width="78" height="30" rx="12" fill="url(#body)"/>
+  <circle cx="46" cy="29" r="5" fill="#1A0B2E" opacity="0.5"/>
+  <!-- chuck -->
+  <rect x="58" y="42" width="24" height="12" rx="3" fill="#FFF1B8"/>
+  <path d="M64 43 v10 M70 43 v10 M76 43 v10" stroke="#E2B000" stroke-width="1.6" stroke-linecap="round"/>
+  <!-- twist bit driven into the peak -->
+  <polygon points="60,52 86,52 73,98" fill="#F4F5FA"/>
+  <path
+    d="M66 60 C84 66 84 72 66 78 C84 84 82 90 70 96"
+    fill="none"
+    stroke="#6A7088"
+    stroke-width="3.2"
+    stroke-linecap="round"
+  />
+  <!-- record point the bit is cutting -->
+  <circle cx="73" cy="98" r="6.5" fill="#FF2D95"/>
+  <circle cx="94" cy="88" r="4.2" fill="#FF2D95"/>
+  <circle cx="104" cy="76" r="2.8" fill="#FF2D95"/>
 </svg>

@@ -1,6 +1,6 @@
 ﻿import { archiveUrl } from './bridgeUrl'
 import type { ButtonMode, Difficulty } from '../types'
-const CACHE_KEY = 'rhythmform-song-catalog-v1'
+const CACHE_KEY = 'drillmax-song-catalog-v1'
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7 // 7일
 
 export interface SongPatternMeta {

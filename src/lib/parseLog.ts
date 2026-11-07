@@ -1,4 +1,7 @@
-﻿import type { ButtonMode, Difficulty, ParsedLogPlay } from '../types'
+import type { ButtonMode, Difficulty, ParsedLogPlay } from '../types'
+import { atLocalDateTime, formatMonthDay, localDateKey } from './dates'
+
+export { formatMonthDay as formatMonthDayAxis, localDateKey as localDayKey }
 
 const BUTTONS: ButtonMode[] = ['4B', '5B', '6B', '8B']
 const DIFFS: Difficulty[] = ['NM', 'HD', 'MX', 'SC']
@@ -65,17 +68,7 @@ export function parseVArchiveLog(text: string): ParsedLogPlay[] {
 
 /** 오늘 날짜 + HH:MM:SS → ISO 문자열 */
 export function todayAt(timeHms: string): string {
-  const now = new Date()
-  const [hh, mm, ss] = timeHms.split(':').map(Number)
-  const d = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    hh ?? 0,
-    mm ?? 0,
-    ss ?? 0,
-  )
-  return d.toISOString()
+  return atLocalDateTime(localDateKey(), timeHms)
 }
 
 export function formatChartLabel(
@@ -92,8 +85,15 @@ export function formatTimeAxis(iso: string): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
+/** 축이 빽빽할 때 HH:MM */
+export function formatTimeAxisShort(iso: string): string {
+  const d = new Date(iso)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 export function formatDateTime(iso: string): string {
   const d = new Date(iso)
   const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+  return `${localDateKey(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }

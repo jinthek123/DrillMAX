@@ -1,11 +1,12 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { importJson, loadData, saveData } from '../lib/storage'
 import {
   appendPlay,
   normalizeAppData,
   sanitizeAppData,
-  upsertDailyBest,
 } from '../lib/dailyBest'
+import { shouldFetchArchiveBest } from '../lib/archiveRefresh'
+import { atLocalDateTime, localDateKey } from '../lib/dates'
 import {
   createChart,
   findChart,
@@ -69,11 +70,7 @@ export function useAppData() {
   }, [data.plays, selectedId])
 
   const highest = useMemo(
-    () =>
-      computeHighest(
-        selectedPlays.map((p) => p.accuracy),
-        selectedChart?.archiveBest,
-      ),
+    () => computeHighest(selectedPlays, selectedChart?.archiveBest),
     [selectedPlays, selectedChart],
   )
 
@@ -113,7 +110,7 @@ export function useAppData() {
       return sanitizeAppData({
         charts: prev.charts.filter((c) => c.id !== chartId),
         plays: prev.plays.filter((p) => p.chartId !== chartId),
-        dailyBests: [],
+        dailyBests: (prev.dailyBests ?? []).filter((d) => d.chartId !== chartId),
         suppressedKeys: addSuppressedKeys(prev.suppressedKeys, keys),
       })
     })
@@ -184,9 +181,21 @@ export function useAppData() {
           : undefined
       const keys =
         play && chart ? [fingerprintFromPlay(play, chart)] : []
+      const plays = prev.plays.filter((p) => p.id !== playId)
+      const dailyBests =
+        play == null
+          ? prev.dailyBests
+          : (prev.dailyBests ?? []).filter(
+              (d) =>
+                !(
+                  d.chartId === play.chartId &&
+                  d.date === localDateKey(play.playedAt)
+                ),
+            )
       return sanitizeAppData({
         ...prev,
-        plays: prev.plays.filter((p) => p.id !== playId),
+        plays,
+        dailyBests,
         suppressedKeys: addSuppressedKeys(prev.suppressedKeys, keys),
       })
     })
@@ -197,6 +206,13 @@ export function useAppData() {
       let next = dataRef.current
       let added = 0
       let firstNewChartId: string | null = null
+      const needArchive: Array<{
+        chartId: string
+        button: ParsedLogPlay['button']
+        difficulty: ParsedLogPlay['difficulty']
+        title: string
+      }> = []
+      const archiveSeen = new Set<string>()
 
       for (const item of parsed) {
         let chart = findChart(
@@ -217,7 +233,7 @@ export function useAppData() {
         }
 
         const playedAt = dateBase
-          ? combineDateAndTime(dateBase, item.time)
+          ? atLocalDateTime(dateBase, item.time)
           : todayAt(item.time)
 
         const fp = playFingerprint(
@@ -252,7 +268,22 @@ export function useAppData() {
         }
         const applied = appendPlay(next, play)
         next = applied.data
-        if (applied.accepted) added += 1
+        if (applied.accepted) {
+          added += 1
+          const key = chart.id
+          if (
+            !archiveSeen.has(key) &&
+            shouldFetchArchiveBest(item.status, chart.archiveBest)
+          ) {
+            archiveSeen.add(key)
+            needArchive.push({
+              chartId: chart.id,
+              button: item.button,
+              difficulty: item.difficulty,
+              title: item.title,
+            })
+          }
+        }
       }
 
       dataRef.current = next
@@ -269,7 +300,7 @@ export function useAppData() {
         if (match) setSelectedId(match.id)
       }
 
-      return added
+      return { added, needArchive }
     },
     [],
   )
@@ -326,7 +357,6 @@ export function useAppData() {
             ...prev,
             charts,
             plays,
-            dailyBests: upsertDailyBest(prev.dailyBests, plays[dupIdx]),
           }
         }
         setSelectedId(chart.id)
@@ -387,8 +417,3 @@ export function useAppData() {
   }
 }
 
-function combineDateAndTime(dateYmd: string, timeHms: string): string {
-  const [y, m, d] = dateYmd.split('-').map(Number)
-  const [hh, mm, ss] = timeHms.split(':').map(Number)
-  return new Date(y, (m ?? 1) - 1, d ?? 1, hh ?? 0, mm ?? 0, ss ?? 0).toISOString()
-}

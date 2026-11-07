@@ -1,8 +1,6 @@
-﻿import { useEffect, useRef, useState } from 'react'
-import { fetchArchiveBest } from '../lib/archiveApi'
+import { useEffect, useRef, useState } from 'react'
 import { bridgeUrl } from '../lib/bridgeUrl'
 import type { ButtonMode, Difficulty, LiveBridgeEvent } from '../types'
-import { loadSettings } from '../lib/settings'
 
 interface BridgeHealth {
   clientOnline: boolean
@@ -13,11 +11,6 @@ interface BridgeHealth {
 interface UseLiveBridgeOptions {
   enabled: boolean
   onEvent: (ev: LiveBridgeEvent) => string
-  onNeedArchiveBest: (
-    chartId: string,
-    ev: LiveBridgeEvent,
-    nickname: string,
-  ) => void
 }
 
 interface SnapshotPlay {
@@ -31,11 +24,7 @@ interface SnapshotPlay {
   raw: string
 }
 
-export function useLiveBridge({
-  enabled,
-  onEvent,
-  onNeedArchiveBest,
-}: UseLiveBridgeOptions) {
+export function useLiveBridge({ enabled, onEvent }: UseLiveBridgeOptions) {
   const [health, setHealth] = useState<BridgeHealth>({
     clientOnline: false,
     nickname: null,
@@ -51,9 +40,8 @@ export function useLiveBridge({
 
     let cancelled = false
     // 스냅샷은 앱 세션당 1회만 — LIVE 토글마다 전체 재수집하지 않음
-    // (삭제한 기록이 V-ARCHIVE 캡처에서 다시 들어오는 것 방지)
 
-    function ingest(ev: LiveBridgeEvent, nickname: string | null) {
+    function ingest(ev: LiveBridgeEvent) {
       if (seenRef.current.has(ev.id)) {
         // MaxCombo 배너가 늦게 잡힌 경우 업그레이드만 재시도
         if (ev.maxCombo) onEvent(ev)
@@ -61,10 +49,8 @@ export function useLiveBridge({
       }
       seenRef.current.add(ev.id)
       sinceRef.current = ev.at > sinceRef.current ? ev.at : sinceRef.current
-      const chartId = onEvent(ev)
-      if (ev.status === '미갱신' && nickname && chartId) {
-        onNeedArchiveBest(chartId, ev, nickname)
-      }
+      // [미갱신] 시 PB 조회는 App.onLiveEvent → refreshArchiveBest
+      onEvent(ev)
     }
 
     async function syncSnapshot() {
@@ -76,23 +62,19 @@ export function useLiveBridge({
         plays: SnapshotPlay[]
       }
       syncedSnapshotRef.current = true
-      // 최신 캡쳐가 위에 있으므로 시간순으로 넣기 위해 reverse
       for (const p of [...json.plays].reverse()) {
-        ingest(
-          {
-            id: `snap-${p.time}-${p.status}-${p.button}-${p.difficulty}-${p.title}-${p.accuracy}`,
-            at: new Date().toISOString(),
-            time: p.time,
-            status: p.status,
-            button: p.button,
-            difficulty: p.difficulty,
-            title: p.title,
-            accuracy: p.accuracy,
-            maxCombo: p.maxCombo,
-            raw: p.raw,
-          },
-          json.nickname,
-        )
+        ingest({
+          id: `snap-${p.time}-${p.status}-${p.button}-${p.difficulty}-${p.title}-${p.accuracy}`,
+          at: new Date().toISOString(),
+          time: p.time,
+          status: p.status,
+          button: p.button,
+          difficulty: p.difficulty,
+          title: p.title,
+          accuracy: p.accuracy,
+          maxCombo: p.maxCombo,
+          raw: p.raw,
+        })
       }
     }
 
@@ -124,7 +106,7 @@ export function useLiveBridge({
         }
 
         for (const ev of json.events) {
-          ingest(ev, json.nickname)
+          ingest(ev)
         }
       } catch {
         if (!cancelled) {
@@ -143,22 +125,7 @@ export function useLiveBridge({
       cancelled = true
       window.clearInterval(id)
     }
-  }, [enabled, onEvent, onNeedArchiveBest])
+  }, [enabled, onEvent])
 
   return { health, bridgeUp }
-}
-
-export async function resolveArchiveBest(
-  nickname: string,
-  ev: LiveBridgeEvent,
-): Promise<number | null> {
-  try {
-    const settings = loadSettings()
-    return await fetchArchiveBest(ev.title, ev.button, ev.difficulty, {
-      token: settings.apiToken || undefined,
-      nickname: settings.nickname || nickname || undefined,
-    })
-  } catch {
-    return null
-  }
 }
