@@ -145,6 +145,9 @@ fn parse_plays(text: &str) -> Vec<SnapshotPlay> {
         .filter_map(|m| {
             let accuracy = m.get(6)?.as_str().parse::<f64>().ok()?;
             let accuracy = (accuracy * 100.0).round() / 100.0;
+            if accuracy <= 0.0 {
+                return None;
+            }
             let button = m.get(3)?.as_str().to_string();
             let difficulty = m.get(4)?.as_str().to_string();
             let acc_key = (accuracy * 100.0).round() as i32;

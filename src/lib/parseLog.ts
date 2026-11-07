@@ -14,6 +14,13 @@ function isDiff(v: string): v is Difficulty {
   return (DIFFS as string[]).includes(v)
 }
 
+/** 캡쳐 결과·같은 줄의 Max Combo / Perfect Play 표기 */
+export function hasComboMark(text: string): boolean {
+  return /Max\s*Combo|Perfect\s*Play|맥스\s*콤보|퍼펙트\s*플레이|\(\s*(?:PP|MC)\s*\)/i.test(
+    text,
+  )
+}
+
 /**
  * V-ARCHIVE 클라이언트 로그에서 [미갱신]/[성공] 플레이 라인을 추출합니다.
  * 예:
@@ -27,7 +34,7 @@ export function parseVArchiveLog(text: string): ParsedLogPlay[] {
   const pattern =
     /\[(\d{2}:\d{2}:\d{2})\]\[(미갱신|성공)\](?:\[[^\]]*\])*(?:\([^)]*\))?\s*(\dB)\s+(NM|HD|MX|SC)\s+(.+?)\s*\((\d+(?:\.\d+)?)\s*%\)/u
 
-  /** 캡쳐 결과: `4B SC 99.72% (MaxCombo)` */
+  /** 캡쳐 결과: `8B MX 99.76% (MaxCombo)` — 로그 줄과 다른 문서에 있을 수 있다 */
   const flagRe =
     /(\dB)\s+(NM|HD|MX|SC)\s+(\d+(?:\.\d+)?)\s*%\s*\(\s*(Max\s*Combo|Perfect\s*Play|PP|MC)\s*\)/gi
   const mcFlags = new Set<string>()
@@ -36,7 +43,8 @@ export function parseVArchiveLog(text: string): ParsedLogPlay[] {
     mcFlags.add(`${m[1].toUpperCase()}|${m[2].toUpperCase()}|${acc}`)
   }
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
     const m = line.match(pattern)
     if (!m) continue
 
@@ -47,10 +55,11 @@ export function parseVArchiveLog(text: string): ParsedLogPlay[] {
     const accuracy = Math.round(Number.parseFloat(acc) * 100) / 100
     if (!title || Number.isNaN(accuracy) || accuracy <= 0) continue
 
+    const nearby = `${line}\n${lines[i + 1] ?? ''}`
     const maxCombo =
       accuracy >= 100 ||
       mcFlags.has(`${button}|${difficulty}|${accuracy}`) ||
-      /\((?:Max\s*Combo|Perfect\s*Play|PP|MC)\)/i.test(line)
+      hasComboMark(nearby)
 
     results.push({
       time,

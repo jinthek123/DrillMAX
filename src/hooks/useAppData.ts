@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { importJson, loadData, saveData } from '../lib/storage'
 import {
   appendPlay,
+  isDiscardAccuracy,
   normalizeAppData,
   sanitizeAppData,
 } from '../lib/dailyBest'
@@ -28,10 +29,107 @@ import type {
   ParsedLogPlay,
   Play,
 } from '../types'
-import { todayAt } from '../lib/parseLog'
+import { hasComboMark, todayAt } from '../lib/parseLog'
 
 function uid(): string {
   return crypto.randomUUID()
+}
+
+function liveCombo(ev: LiveBridgeEvent): boolean {
+  return ev.maxCombo === true || ev.accuracy >= 100 || hasComboMark(ev.raw ?? '')
+}
+
+/** LIVE 한 건을 현재 데이터에 반영. 차트 id와 그 차트의 PB를 바로 돌려준다. */
+function reduceLiveEvent(prev: AppData, ev: LiveBridgeEvent): {
+  data: AppData
+  chartId: string
+  archiveBest: number | null
+  acceptedPlay: Play | null
+  selectId: string | null
+} {
+  if (isDiscardAccuracy(ev.accuracy)) {
+    return {
+      data: prev,
+      chartId: '',
+      archiveBest: null,
+      acceptedPlay: null,
+      selectId: null,
+    }
+  }
+
+  const combo = liveCombo(ev)
+  const fp = playFingerprint(
+    ev.button,
+    ev.difficulty,
+    ev.title,
+    ev.accuracy,
+    ev.time,
+  )
+  if (isSuppressed(prev.suppressedKeys, fp)) {
+    const existing = findChart(prev.charts, ev.title, ev.button, ev.difficulty)
+    return {
+      data: prev,
+      chartId: existing?.id ?? '',
+      archiveBest: existing?.archiveBest ?? null,
+      acceptedPlay: null,
+      selectId: existing?.id ?? null,
+    }
+  }
+
+  let charts = [...prev.charts]
+  let chart = findChart(charts, ev.title, ev.button, ev.difficulty)
+  if (!chart) {
+    chart = createChart(ev.title, ev.button, ev.difficulty, uid())
+    charts = [...charts, chart]
+  }
+
+  const playedAt = todayAt(ev.time)
+  const dupIdx = isNearDuplicatePlay(
+    prev.plays,
+    chart.id,
+    ev.accuracy,
+    playedAt,
+    2000,
+  )
+  if (dupIdx >= 0) {
+    if (combo && !prev.plays[dupIdx].maxCombo) {
+      const plays = prev.plays.map((p, i) =>
+        i === dupIdx ? { ...p, maxCombo: true } : p,
+      )
+      return {
+        data: { ...prev, charts, plays },
+        chartId: chart.id,
+        archiveBest: chart.archiveBest ?? null,
+        acceptedPlay: plays[dupIdx],
+        selectId: chart.id,
+      }
+    }
+    return {
+      data: charts !== prev.charts ? { ...prev, charts } : prev,
+      chartId: chart.id,
+      archiveBest: chart.archiveBest ?? null,
+      acceptedPlay: null,
+      selectId: chart.id,
+    }
+  }
+
+  const play: Play = {
+    id: uid(),
+    chartId: chart.id,
+    accuracy: ev.accuracy,
+    playedAt,
+    maxCombo: combo || undefined,
+    source: 'live',
+    status: ev.status,
+  }
+  const applied = appendPlay({ ...prev, charts }, play)
+  return {
+    data: applied.data,
+    chartId: chart.id,
+    archiveBest: chart.archiveBest ?? null,
+    acceptedPlay: applied.accepted ? play : null,
+    selectId: chart.id,
+  }
 }
 
 export function useAppData() {
@@ -145,17 +243,19 @@ export function useAppData() {
   )
 
   const setArchiveBest = useCallback((chartId: string, score: number) => {
-    setData((prev) => ({
-      ...prev,
-      charts: prev.charts.map((c) =>
-        c.id === chartId
-          ? {
-              ...c,
-              archiveBest: Math.max(c.archiveBest ?? 0, score),
-            }
-          : c,
-      ),
-    }))
+    const prev = dataRef.current
+    let changed = false
+    const charts = prev.charts.map((c) => {
+      if (c.id !== chartId) return c
+      const nextScore = Math.max(c.archiveBest ?? 0, score)
+      if (c.archiveBest === nextScore) return c
+      changed = true
+      return { ...c, archiveBest: nextScore }
+    })
+    if (!changed) return
+    const next = { ...prev, charts }
+    dataRef.current = next
+    setData(next)
   }, [])
 
   const applyArchiveBests = useCallback((bests: Map<string, number>) => {
@@ -215,6 +315,7 @@ export function useAppData() {
       const archiveSeen = new Set<string>()
 
       for (const item of parsed) {
+        if (isDiscardAccuracy(item.accuracy)) continue
         let chart = findChart(
           next.charts,
           item.title,
@@ -306,80 +407,20 @@ export function useAppData() {
   )
 
   const ingestLiveEvent = useCallback((ev: LiveBridgeEvent) => {
-    let chartId = ''
-    let acceptedPlay: Play | null = null
-
-    setData((prev) => {
-      const fp = playFingerprint(
-        ev.button,
-        ev.difficulty,
-        ev.title,
-        ev.accuracy,
-        ev.time,
-      )
-      if (isSuppressed(prev.suppressedKeys, fp)) {
-        const existing = findChart(
-          prev.charts,
-          ev.title,
-          ev.button,
-          ev.difficulty,
-        )
-        chartId = existing?.id ?? ''
-        if (existing) setSelectedId(existing.id)
-        return prev
-      }
-
-      let charts = [...prev.charts]
-      let chart = findChart(charts, ev.title, ev.button, ev.difficulty)
-      if (!chart) {
-        chart = createChart(ev.title, ev.button, ev.difficulty, uid())
-        charts.push(chart)
-      }
-      chartId = chart.id
-
-      const playedAt = todayAt(ev.time)
-      // 동일 LIVE 이벤트 중복(2초)만 스킵 — 그날의 다른 플레이는 모두 보관
-      const dupIdx = isNearDuplicatePlay(
-        prev.plays,
-        chart.id,
-        ev.accuracy,
-        playedAt,
-        2000,
-      )
-      if (dupIdx >= 0) {
-        if (ev.maxCombo && !prev.plays[dupIdx].maxCombo) {
-          const plays = prev.plays.map((p, i) =>
-            i === dupIdx ? { ...p, maxCombo: true } : p,
-          )
-          acceptedPlay = plays[dupIdx]
-          setSelectedId(chart.id)
-          return {
-            ...prev,
-            charts,
-            plays,
-          }
-        }
-        setSelectedId(chart.id)
-        return charts !== prev.charts ? { ...prev, charts } : prev
-      }
-
-      const play: Play = {
-        id: uid(),
-        chartId: chart.id,
-        accuracy: ev.accuracy,
-        playedAt,
-        maxCombo: ev.maxCombo || ev.accuracy >= 100 || undefined,
-        source: 'live',
-        status: ev.status,
-      }
-      const applied = appendPlay({ ...prev, charts }, play)
-      if (applied.accepted) acceptedPlay = play
-      setSelectedId(chart.id)
-      return applied.data
-    })
-
-    if (acceptedPlay) setLatestLive(acceptedPlay)
-    return chartId
+    // setState 갱신 함수는 같은 턴에 이미 갱신이 있으면 바로 실행되지 않는다.
+    // 차트 id를 그 안에서 읽으면 첫 미갱신 HR 조회가 통째로 빠진다.
+    const prev = dataRef.current
+    const result = reduceLiveEvent(prev, ev)
+    if (result.data !== prev) {
+      dataRef.current = result.data
+      setData(result.data)
+    }
+    if (result.selectId) setSelectedId(result.selectId)
+    if (result.acceptedPlay) setLatestLive(result.acceptedPlay)
+    return {
+      chartId: result.chartId,
+      archiveBest: result.archiveBest,
+    }
   }, [])
 
   const replaceAll = useCallback((next: AppData) => {

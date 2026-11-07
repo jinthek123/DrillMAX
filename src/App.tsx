@@ -66,6 +66,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<AppTabId>('overview')
   const [hydrated, setHydrated] = useState(false)
   const archiveBestsRef = useRef<ArchiveBestMap | null>(null)
+  const archivePendingRef = useRef(new Set<string>())
 
   // Tauri: drillMax.json 자동 로드
   useEffect(() => {
@@ -156,7 +157,7 @@ export default function App() {
       )
       if (cached != null) setArchiveBest(chartId, cached)
 
-      void (async () => {
+      return (async () => {
         const best = await resolveArchiveBest(
           title,
           button,
@@ -175,38 +176,27 @@ export default function App() {
 
   const onLiveEvent = useCallback(
     (ev: LiveBridgeEvent) => {
-      const chartId = ingestLiveEvent(ev)
-      if (!chartId) return chartId
-
-      const cached = lookupBest(
-        archiveBestsRef.current,
-        ev.button,
-        ev.difficulty,
-        ev.title,
-      )
-      const chartPb =
-        data.charts.find((c) => c.id === chartId)?.archiveBest ?? cached
-
-      if (shouldFetchArchiveBest(ev.status, chartPb)) {
-        refreshArchiveBest(
+      const { chartId, archiveBest } = ingestLiveEvent(ev)
+      if (!chartId) return ''
+      // 차트에 PB가 아직 없을 때만. 캐시에 있어도 차트 자신은 비어 있으면 조회한다.
+      if (
+        shouldFetchArchiveBest(ev.status, archiveBest) &&
+        !archivePendingRef.current.has(chartId)
+      ) {
+        archivePendingRef.current.add(chartId)
+        void refreshArchiveBest(
           chartId,
           ev.title,
           ev.button,
           ev.difficulty,
           settings.nickname,
-        )
-      } else if (cached != null) {
-        setArchiveBest(chartId, cached)
+        ).finally(() => {
+          archivePendingRef.current.delete(chartId)
+        })
       }
       return chartId
     },
-    [
-      data.charts,
-      ingestLiveEvent,
-      setArchiveBest,
-      refreshArchiveBest,
-      settings.nickname,
-    ],
+    [ingestLiveEvent, refreshArchiveBest, settings.nickname],
   )
 
   const { health, bridgeUp } = useLiveBridge({
