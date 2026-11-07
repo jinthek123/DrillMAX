@@ -13,7 +13,7 @@ V-ARCHIVE 클라이언트에 표시되는 **로그 텍스트**를 읽어, 공식
 
 [다운로드 (Releases)](https://github.com/jinthek123/rhythmForm/releases) · [버그·문의 (Issues)](https://github.com/jinthek123/rhythmForm/issues)
 
-<img width="850" height="563" alt="image" src="https://github.com/user-attachments/assets/6910c7cf-f367-4e45-8d7f-4fbda03a3222" />
+<img width="1602" height="1063" alt="image" src="https://github.com/user-attachments/assets/63b32d01-b235-48ce-9d82-533beecca5b0" />
 
 ---
 
