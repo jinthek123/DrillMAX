@@ -1,10 +1,10 @@
 # Changelog
 
-설치본에 들어간 변경과, 아직 설치본에 없는 소스 변경입니다. 사용 방법은 [README](./README.md)에 있습니다.
+설치본과 소스의 변경입니다. 사용 방법은 [README](./README.md)에 있습니다.
 
 ## 1.1.1 — 2026-11-12
 
-소스 태그는 [v1.1.1](https://github.com/jinthek123/DrillMAX/releases/tag/v1.1.1)입니다. 설치본은 아직 [v1.1.0](https://github.com/jinthek123/DrillMAX/releases/tag/v1.1.0)입니다.
+설치본은 [v1.1.1](https://github.com/jinthek123/DrillMAX/releases/tag/v1.1.1)의 `DrillMAX_1.1.1_x64-setup.exe`입니다.
 
 ### 데이터
 
