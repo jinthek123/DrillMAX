@@ -104,6 +104,15 @@ export function OverviewPanel({
   const flipFrom = useRef<Map<string, number> | null>(null)
 
   const allRows = useMemo(() => buildChartOverview(data), [data])
+  const dailyByChart = useMemo(() => {
+    const map = new Map<string, NonNullable<AppData['dailyBests']>>()
+    for (const row of data.dailyBests ?? []) {
+      const list = map.get(row.chartId)
+      if (list) list.push(row)
+      else map.set(row.chartId, [row])
+    }
+    return map
+  }, [data.dailyBests])
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return allRows.filter((r) => {
@@ -143,7 +152,7 @@ export function OverviewPanel({
         { duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
       )
     })
-  })
+  }, [rows])
 
   const beginDrag = (event: ReactPointerEvent<HTMLButtonElement>, id: string) => {
     if (event.button !== 0) return
@@ -309,7 +318,7 @@ export function OverviewPanel({
               chart={r.chart}
               latest={r.latest}
               highest={r.highest}
-              dailyBests={data.dailyBests}
+              dailyBests={dailyByChart.get(r.chart.id)}
               lifted={drag?.id === r.chart.id}
               sliding={drag != null && drag.id !== r.chart.id}
               shiftY={cardShift(index, drag)}

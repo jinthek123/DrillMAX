@@ -25,32 +25,63 @@ interface CachePayload {
   songs: SongEntry[]
 }
 
-function normalize(s: string): string {
+export function normalizeSongKey(s: string): string {
   return s.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
-export function loadCachedSongs(): SongEntry[] {
+export interface SongIndex {
+  byName: Map<string, SongEntry>
+  entries: Array<{ song: SongEntry; name: string; composer: string }>
+}
+
+let memoryRaw: string | null = null
+let memoryPayload: CachePayload | null = null
+
+function readCache(): CachePayload | null {
   try {
     const raw = localStorage.getItem(CACHE_KEY)
-    if (!raw) return []
+    if (!raw) {
+      memoryRaw = null
+      memoryPayload = null
+      return null
+    }
+    if (raw === memoryRaw && memoryPayload) return memoryPayload
     const parsed = JSON.parse(raw) as CachePayload
-    if (!Array.isArray(parsed.songs)) return []
-    if (Date.now() - parsed.fetchedAt > CACHE_TTL_MS) return parsed.songs
-    return parsed.songs
+    if (!parsed || !Array.isArray(parsed.songs)) return null
+    memoryRaw = raw
+    memoryPayload = parsed
+    return parsed
   } catch {
-    return []
+    return null
   }
 }
 
+function rememberCache(payload: CachePayload) {
+  const raw = JSON.stringify(payload)
+  memoryRaw = raw
+  memoryPayload = payload
+  localStorage.setItem(CACHE_KEY, raw)
+}
+
+export function loadCachedSongs(): SongEntry[] {
+  return readCache()?.songs ?? []
+}
+
 export function isCacheFresh(): boolean {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY)
-    if (!raw) return false
-    const parsed = JSON.parse(raw) as CachePayload
-    return Date.now() - parsed.fetchedAt <= CACHE_TTL_MS
-  } catch {
-    return false
-  }
+  const parsed = readCache()
+  if (!parsed) return false
+  return Date.now() - parsed.fetchedAt <= CACHE_TTL_MS
+}
+
+export function buildSongIndex(songs: SongEntry[]): SongIndex {
+  const byName = new Map<string, SongEntry>()
+  const entries = songs.map((song) => {
+    const name = normalizeSongKey(song.name)
+    const composer = normalizeSongKey(song.composer)
+    if (!byName.has(name)) byName.set(name, song)
+    return { song, name, composer }
+  })
+  return { byName, entries }
 }
 
 export async function fetchSongCatalog(): Promise<SongEntry[]> {
@@ -74,8 +105,7 @@ export async function fetchSongCatalog(): Promise<SongEntry[]> {
       patterns: s.patterns ?? {},
     }))
 
-  const payload: CachePayload = { fetchedAt: Date.now(), songs }
-  localStorage.setItem(CACHE_KEY, JSON.stringify(payload))
+  rememberCache({ fetchedAt: Date.now(), songs })
   return songs
 }
 
@@ -95,33 +125,30 @@ export function availableDifficulties(
 }
 
 export function findSongExact(
-  songs: SongEntry[],
+  index: SongIndex,
   title: string,
 ): SongEntry | undefined {
-  const key = normalize(title)
-  return songs.find((s) => normalize(s.name) === key)
+  return index.byName.get(normalizeSongKey(title))
 }
 
-/** 부분 일치 + 시작 일치 우선 정렬 */
+/** 부분 일치 + 시작 일치 우선 정렬. 이름 정규화는 인덱스를 만들 때 한 번만 한다. */
 export function searchSongs(
-  songs: SongEntry[],
+  index: SongIndex,
   query: string,
   limit = 12,
 ): SongEntry[] {
-  const q = normalize(query)
+  const q = normalizeSongKey(query)
   if (!q) return []
 
   const scored: { song: SongEntry; score: number }[] = []
-  for (const song of songs) {
-    const name = normalize(song.name)
-    const composer = normalize(song.composer)
+  for (const entry of index.entries) {
     let score = -1
-    if (name === q) score = 100
-    else if (name.startsWith(q)) score = 80
-    else if (name.includes(q)) score = 60
-    else if (composer.startsWith(q)) score = 40
-    else if (composer.includes(q)) score = 20
-    if (score >= 0) scored.push({ song, score })
+    if (entry.name === q) score = 100
+    else if (entry.name.startsWith(q)) score = 80
+    else if (entry.name.includes(q)) score = 60
+    else if (entry.composer.startsWith(q)) score = 40
+    else if (entry.composer.includes(q)) score = 20
+    if (score >= 0) scored.push({ song: entry.song, score })
   }
 
   scored.sort((a, b) => {

@@ -21,7 +21,7 @@ use tower_http::cors::{Any, CorsLayer};
 
 static HTTP: Lazy<reqwest::Client> = Lazy::new(|| {
     reqwest::Client::builder()
-        .user_agent("DrillMAX/1.1.0")
+        .user_agent("DrillMAX/1.1.1")
         .timeout(Duration::from_secs(30))
         .build()
         .expect("http client")

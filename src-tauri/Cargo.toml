@@ -1,6 +1,6 @@
 [package]
 name = "drillmax"
-version = "1.1.0"
+version = "1.1.1"
 description = "DrillMAX — local V-ARCHIVE play tracker"
 authors = ["DrillMAX"]
 edition = "2021"

@@ -6,7 +6,7 @@ import type {
   Difficulty,
   Play,
 } from '../types'
-import type { SongEntry } from './songCatalog'
+import { normalizeSongKey, type SongEntry } from './songCatalog'
 import { isDiscardAccuracy } from './dailyBest'
 import { round2 } from './math'
 
@@ -76,7 +76,7 @@ function stableChartId(
 function catalogByName(songs: SongEntry[]): Map<string, SongEntry> {
   const map = new Map<string, SongEntry>()
   for (const s of songs) {
-    map.set(s.name.trim().toLowerCase(), s)
+    map.set(normalizeSongKey(s.name), s)
   }
   return map
 }
@@ -103,7 +103,7 @@ export function toDrillMaxFile(
   const songMap = new Map<string, DrillMaxSong>()
 
   for (const chart of data.charts) {
-    const key = chart.title.trim().toLowerCase()
+    const key = normalizeSongKey(chart.title)
     const meta = cat.get(key)
     let song = songMap.get(key)
     if (!song) {

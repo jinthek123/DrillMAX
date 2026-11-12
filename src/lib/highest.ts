@@ -9,11 +9,11 @@ export function computeHighest(
   archiveBest?: number | null,
 ): number | null {
   let fromPlays: number | null = null
-  if (plays && plays.length > 0) {
-    const eligible = plays
-      .filter((p) => p.status !== '미갱신')
-      .map((p) => p.accuracy)
-    if (eligible.length > 0) fromPlays = Math.max(...eligible)
+  if (plays) {
+    for (const p of plays) {
+      if (p.status === '미갱신') continue
+      if (fromPlays == null || p.accuracy > fromPlays) fromPlays = p.accuracy
+    }
   }
 
   const fromArchive = archiveBest ?? null

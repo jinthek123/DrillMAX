@@ -6,6 +6,7 @@ import {
   findSongExact,
   searchSongs,
   type SongEntry,
+  type SongIndex,
 } from '../lib/songCatalog'
 
 const ALL_BUTTONS: ButtonMode[] = ['4B', '5B', '6B', '8B']
@@ -15,7 +16,7 @@ interface AddChartModalProps {
   open: boolean
   onClose: () => void
   onSubmit: (title: string, button: ButtonMode, difficulty: Difficulty) => void
-  songs: SongEntry[]
+  songIndex: SongIndex
   catalogStatus: 'idle' | 'loading' | 'ready' | 'error'
   knownTitles?: string[]
 }
@@ -24,7 +25,7 @@ export function AddChartModal({
   open,
   onClose,
   onSubmit,
-  songs,
+  songIndex,
   catalogStatus,
   knownTitles = [],
 }: AddChartModalProps) {
@@ -37,8 +38,8 @@ export function AddChartModal({
   const listRef = useRef<HTMLUListElement>(null)
 
   const matchedSong = useMemo(
-    () => findSongExact(songs, title),
-    [songs, title],
+    () => findSongExact(songIndex, title),
+    [songIndex, title],
   )
 
   const buttonOptions = useMemo(() => {
@@ -54,7 +55,7 @@ export function AddChartModal({
   }, [matchedSong, button])
 
   const suggestions = useMemo(() => {
-    const fromDb = searchSongs(songs, title, 10)
+    const fromDb = searchSongs(songIndex, title, 10)
     if (fromDb.length > 0) return fromDb
 
     // DB 미로드·무결과 시 로컬에 있던 제목으로 보조
@@ -71,7 +72,7 @@ export function AddChartModal({
           patterns: {},
         }),
       )
-  }, [songs, title, knownTitles])
+  }, [songIndex, title, knownTitles])
 
   useEffect(() => {
     if (!open) return
@@ -213,7 +214,7 @@ export function AddChartModal({
           <p className="field-hint">
             {catalogStatus === 'loading' && 'V-ARCHIVE 곡 목록 불러오는 중…'}
             {catalogStatus === 'ready' &&
-              `${songs.length}곡 자동완성 준비됨 · ↑↓ 선택 · Enter`}
+              `${songIndex.entries.length}곡 자동완성 준비됨 · ↑↓ 선택 · Enter`}
             {catalogStatus === 'error' &&
               '온라인 곡 목록을 못 불러왔습니다. 직접 입력은 가능합니다.'}
             {catalogStatus === 'idle' && '곡 이름을 입력하세요'}

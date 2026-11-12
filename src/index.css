@@ -47,6 +47,20 @@
   --btn-5-ink: #1e2a36;
   --btn-6-ink: #3a2418;
   --btn-8-ink: #1c2e2c;
+
+  /* 표기 레벨 기준. SC 색은 floor가 아니라 level 구간 */
+  --diff-nm: #f4b800;
+  --diff-hd: #f45c00;
+  --diff-mx: #f40050;
+  --diff-sc-1: #dc0074;
+  --diff-sc-6: #c404e4;
+  --diff-sc-11: #3c64fc;
+  --diff-nm-ink: #3a2e00;
+  --diff-hd-ink: #3a1800;
+  --diff-mx-ink: #3a0014;
+  --diff-sc-1-ink: #3a001c;
+  --diff-sc-6-ink: #2a0033;
+  --diff-sc-11-ink: #061433;
 }
 
 /* Dark — DJMAX midnight / gold / magenta */

@@ -56,7 +56,7 @@ export default function App() {
     importFromJsonText,
     replaceAll,
   } = useAppData()
-  const { songs, status: catalogStatus } = useSongCatalog()
+  const { songs, index: songIndex, status: catalogStatus } = useSongCatalog()
 
   const [settings, setSettings] = useState(() => loadSettings())
   const [apiSetupOpen, setApiSetupOpen] = useState(() => !loadSettings().setupDone)
@@ -225,6 +225,7 @@ export default function App() {
       <div className="bg-grid" aria-hidden />
       <Sidebar
         charts={sortedCharts}
+        songIndex={songIndex}
         selectedId={selectedId}
         playCounts={playCounts}
         onSelect={openChartTab}
@@ -313,7 +314,7 @@ export default function App() {
             setActiveTab('chart')
           }
         }}
-        songs={songs}
+        songIndex={songIndex}
         catalogStatus={catalogStatus}
         knownTitles={knownTitles}
       />

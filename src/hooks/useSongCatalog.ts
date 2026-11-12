@@ -1,15 +1,23 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useEffect, useMemo, useState } from 'react'
 import {
+  buildSongIndex,
   fetchSongCatalog,
   isCacheFresh,
   loadCachedSongs,
   type SongEntry,
+  type SongIndex,
 } from '../lib/songCatalog'
+
+const EMPTY_INDEX: SongIndex = { byName: new Map(), entries: [] }
 
 export function useSongCatalog() {
   const [songs, setSongs] = useState<SongEntry[]>(() => loadCachedSongs())
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>(
-    () => (loadCachedSongs().length > 0 ? 'ready' : 'idle'),
+    () => (songs.length > 0 ? 'ready' : 'idle'),
+  )
+  const index = useMemo(
+    () => (songs.length > 0 ? buildSongIndex(songs) : EMPTY_INDEX),
+    [songs],
   )
 
   useEffect(() => {
@@ -46,5 +54,5 @@ export function useSongCatalog() {
     }
   }, [])
 
-  return { songs, status }
+  return { songs, index, status }
 }

@@ -36,21 +36,22 @@ export function buildChartOverview(data: AppData): ChartOverviewRow[] {
   }
 
   return data.charts.map((chart) => {
-    const plays = (byChart.get(chart.id) ?? [])
-      .slice()
-      .sort(
-        (a, b) =>
-          new Date(a.playedAt).getTime() - new Date(b.playedAt).getTime(),
-      )
-    const accuracies = plays.map((p) => p.accuracy)
-    const best = accuracies.length > 0 ? Math.max(...accuracies) : null
+    const plays = byChart.get(chart.id) ?? []
     const archiveBest = chart.archiveBest ?? null
-    // Highest: 미갱신 점수 제외 + archive PB
     const highest = computeHighest(plays, archiveBest)
+    let best: number | null = null
+    let latest: Play | null = null
+    let latestAt = Number.NEGATIVE_INFINITY
     let ppCount = 0
     let mcCount = 0
     let pendingCount = 0
     for (const p of plays) {
+      if (best == null || p.accuracy > best) best = p.accuracy
+      const at = Date.parse(p.playedAt)
+      if (at >= latestAt) {
+        latestAt = at
+        latest = p
+      }
       if (isPerfectPlay(p.accuracy, p.maxCombo)) ppCount += 1
       else if (p.maxCombo) mcCount += 1
       if (p.status === '미갱신') pendingCount += 1
@@ -61,7 +62,7 @@ export function buildChartOverview(data: AppData): ChartOverviewRow[] {
       best,
       archiveBest,
       highest,
-      latest: plays.length > 0 ? plays[plays.length - 1] : null,
+      latest,
       ppCount,
       mcCount,
       pendingCount,

@@ -94,12 +94,18 @@ export function useLiveBridge({ enabled, onEvent }: UseLiveBridgeOptions) {
           serverTime: string
         }
         if (cancelled) return
-        setBridgeUp(true)
-        setHealth({
-          clientOnline: json.clientOnline,
-          nickname: json.nickname,
-          lastError: json.lastError,
-        })
+        setBridgeUp((up) => (up ? up : true))
+        setHealth((prev) =>
+          prev.clientOnline === json.clientOnline &&
+          prev.nickname === json.nickname &&
+          prev.lastError === json.lastError
+            ? prev
+            : {
+                clientOnline: json.clientOnline,
+                nickname: json.nickname,
+                lastError: json.lastError,
+              },
+        )
 
         if (json.clientOnline) {
           await syncSnapshot()
@@ -110,11 +116,15 @@ export function useLiveBridge({ enabled, onEvent }: UseLiveBridgeOptions) {
         }
       } catch {
         if (!cancelled) {
-          setBridgeUp(false)
-          setHealth((h) => ({
-            ...h,
-            lastError: '브리지 연결 실패 — 앱을 다시 실행해 주세요',
-          }))
+          setBridgeUp((up) => (up ? false : up))
+          setHealth((h) =>
+            h.lastError === '브리지 연결 실패 — 앱을 다시 실행해 주세요'
+              ? h
+              : {
+                  ...h,
+                  lastError: '브리지 연결 실패 — 앱을 다시 실행해 주세요',
+                },
+          )
         }
       }
     }
