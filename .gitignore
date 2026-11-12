@@ -17,7 +17,8 @@ credentials*.json
 settings.cfg
 
 # local data / dumps
-data/
+dev-data/
+data/drillMax.json
 
 # logs / temp
 logs

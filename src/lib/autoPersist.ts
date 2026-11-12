@@ -12,13 +12,31 @@ import { readAppDataJson, writeAppDataJson } from './persist'
 
 const FILE_NAME = 'drillMax.json'
 
+declare const __DRILLMAX_DATA_FILE__: string
+
 function joinPath(dir: string, file: string): string {
   const trimmed = dir.replace(/[/\\]+$/, '')
   const sep = trimmed.includes('\\') ? '\\' : '/'
   return `${trimmed}${sep}${file}`
 }
 
-/** 저장 경로: backupDir 우선, 없으면 앱 데이터 폴더 */
+function toWindowsPath(filePath: string): string {
+  const trimmed = filePath.trim()
+  if (!trimmed) return ''
+  return trimmed.includes('\\') ? trimmed : trimmed.replace(/\//g, '\\')
+}
+
+/** 이 저장소를 연 곳의 data/drillMax.json. 소스에는 PC별 절대경로를 적지 않는다. */
+function repoDataFile(): string {
+  const injected = toWindowsPath(__DRILLMAX_DATA_FILE__ ?? '')
+  if (injected) return injected
+  return `data\\${FILE_NAME}`
+}
+
+/**
+ * 저장 경로.
+ * 데이터 폴더를 지정하면 그곳, 아니면 저장소의 data/drillMax.json.
+ */
 export async function resolvePersistPath(
   backupDir?: string,
 ): Promise<{ path: string; baseDir?: BaseDirectory } | null> {
@@ -26,7 +44,7 @@ export async function resolvePersistPath(
   if (backupDir?.trim()) {
     return { path: joinPath(backupDir.trim(), FILE_NAME) }
   }
-  return { path: FILE_NAME, baseDir: BaseDirectory.AppData }
+  return { path: repoDataFile() }
 }
 
 export async function loadDrillMaxFile(
@@ -68,17 +86,20 @@ export async function saveDrillMaxFile(
   const target = await resolvePersistPath(opts?.backupDir)
   if (!target) return null
 
-  if (target.baseDir != null) {
+  const parent = target.path.replace(/[/\\][^/\\]+$/, '')
+  if (parent && parent !== target.path) {
     try {
-      await mkdir('', { baseDir: target.baseDir, recursive: true })
+      await mkdir(parent, { recursive: true })
     } catch {
       /* already exists */
     }
-    await writeTextFile(target.path, json, { baseDir: target.baseDir })
-    return `AppData/${target.path}`
   }
 
-  await writeTextFile(target.path, json)
+  await writeTextFile(
+    target.path,
+    json,
+    target.baseDir != null ? { baseDir: target.baseDir } : undefined,
+  )
   return target.path
 }
 

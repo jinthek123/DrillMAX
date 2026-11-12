@@ -25,8 +25,8 @@ export function BackupModal({
       >
         <h2 id="backup-title">데이터 폴더</h2>
         <p className="modal-hint">
-          성적은 <code>drillMax.json</code> 으로 자동 저장됩니다. 폴더를
-          지정하면 그 위치에, 없으면 앱 데이터 폴더에 저장합니다.
+          성적은 <code>data/drillMax.json</code> 에 자동 저장됩니다. 다른
+          폴더를 지정하면 그 위치를 사용합니다.
         </p>
 
         <label className="field">
@@ -35,7 +35,7 @@ export function BackupModal({
             <input
               className="mono"
               readOnly
-              value={backupDir || '(앱 데이터 폴더 · 자동)'}
+              value={backupDir || '(data 폴더 · 자동)'}
               title={backupDir || undefined}
             />
             <button type="button" className="btn-ghost" onClick={onPickFolder}>

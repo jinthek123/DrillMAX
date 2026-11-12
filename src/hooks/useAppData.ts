@@ -9,6 +9,7 @@ import {
 import { shouldFetchArchiveBest } from '../lib/archiveRefresh'
 import { atLocalDateTime, localDateKey } from '../lib/dates'
 import {
+  compareChartOrder,
   createChart,
   findChart,
   isNearDuplicatePlay,
@@ -423,6 +424,28 @@ export function useAppData() {
     }
   }, [])
 
+  const reorderCharts = useCallback((orderedVisibleIds: string[]) => {
+    setData((prev) => {
+      const byId = new Map(prev.charts.map((c) => [c.id, c]))
+      const visible = new Set(orderedVisibleIds)
+      const queue = orderedVisibleIds.filter((id) => byId.has(id))
+      const nextIds: string[] = []
+      for (const chart of [...prev.charts].sort(compareChartOrder)) {
+        if (!visible.has(chart.id)) {
+          nextIds.push(chart.id)
+          continue
+        }
+        const id = queue.shift()
+        if (id) nextIds.push(id)
+      }
+      for (const id of queue) nextIds.push(id)
+      return {
+        ...prev,
+        charts: nextIds.map((id, order) => ({ ...byId.get(id)!, order })),
+      }
+    })
+  }, [])
+
   const replaceAll = useCallback((next: AppData) => {
     const normalized = normalizeAppData(next)
     setData(normalized)
@@ -447,6 +470,7 @@ export function useAppData() {
     latestLive,
     addChart,
     deleteChart,
+    reorderCharts,
     addPlay,
     deletePlay,
     importLogPlays,

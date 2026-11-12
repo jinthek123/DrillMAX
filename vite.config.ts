@@ -1,10 +1,18 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+
+const rootDir = fileURLToPath(new URL('.', import.meta.url))
+const dataFile = path.join(rootDir, 'data', 'drillMax.json')
 
 const host = process.env.TAURI_DEV_HOST
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __DRILLMAX_DATA_FILE__: JSON.stringify(dataFile),
+  },
   base: './',
   clearScreen: false,
   server: {

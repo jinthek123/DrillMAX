@@ -12,6 +12,16 @@ export function findChart(
   )
 }
 
+export function compareChartOrder(a: Chart, b: Chart): number {
+  const ao = a.order ?? Number.MAX_SAFE_INTEGER
+  const bo = b.order ?? Number.MAX_SAFE_INTEGER
+  if (ao !== bo) return ao - bo
+  return `${a.button}${a.difficulty}${a.title}`.localeCompare(
+    `${b.button}${b.difficulty}${b.title}`,
+    'ko',
+  )
+}
+
 export function createChart(
   title: string,
   button: ButtonMode,

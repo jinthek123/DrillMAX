@@ -68,19 +68,22 @@ export function Sidebar({
           const active = c.id === selectedId
           return (
             <li key={c.id}>
-              <button
-                type="button"
+              <div
                 className={`chart-item${active ? ' active' : ''}`}
                 data-button={c.button}
-                onClick={() => onSelect(c.id)}
               >
-                <span className="chart-item-label">
-                  {formatChartLabel(c.button, c.difficulty, c.title)}
-                </span>
-                <span className="chart-item-meta">
-                  {playCounts[c.id] ?? 0}회
-                </span>
-              </button>
+                <button
+                  type="button"
+                  className="chart-item-main"
+                  onClick={() => onSelect(c.id)}
+                >
+                  <span className="chart-item-label">
+                    {formatChartLabel(c.button, c.difficulty, c.title)}
+                  </span>
+                  <span className="chart-item-meta">
+                    {playCounts[c.id] ?? 0}회
+                  </span>
+                </button>
               {active && (
                 <button
                   type="button"
@@ -110,6 +113,7 @@ export function Sidebar({
                   삭제
                 </button>
               )}
+              </div>
             </li>
           )
         })}

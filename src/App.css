@@ -275,31 +275,42 @@
 }
 
 .chart-item {
+  position: relative;
   width: 100%;
   text-align: left;
   border: 1px solid transparent;
   background: transparent;
   border-radius: 18px;
   padding: 12px 16px 14px;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.chart-item-main {
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.chart-item.active .chart-item-main {
+  padding-right: 40px;
 }
 
 .chart-item:hover {
-  background: var(--accent-soft);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
 }
 
 .chart-item.active {
-  background: var(--accent);
-  color: var(--bg0);
-  border-color: var(--accent);
-  transform: translateX(2px);
-}
-
-[data-theme='light'] .chart-item.active {
-  color: #fff;
+  color: inherit;
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .chart-item-label {
@@ -317,14 +328,22 @@
 }
 
 .chart-delete {
-  margin: 2px 10px 0;
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  margin: 0;
   border: none;
   background: none;
   color: var(--danger);
-  font-size: 0.88rem;
-  font-weight: 600;
-  text-align: left;
-  padding: 0 4px;
+  font-size: 0.8rem;
+  font-weight: 650;
+  line-height: 1;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.chart-delete:hover {
+  color: color-mix(in srgb, var(--danger) 75%, var(--ink));
 }
 
 .main {
@@ -1013,37 +1032,28 @@
 }
 
 .chart-item.active[data-button='4B'] {
-  background: var(--btn-4);
-  border-color: var(--btn-4);
-  color: var(--btn-4-ink);
+  background: color-mix(in srgb, var(--btn-4) 16%, transparent);
+  border-color: color-mix(in srgb, var(--btn-4) 42%, var(--border));
+  color: inherit;
+  box-shadow: inset 4px 0 0 var(--btn-4);
 }
 .chart-item.active[data-button='5B'] {
-  background: var(--btn-5);
-  border-color: var(--btn-5);
-  color: var(--btn-5-ink);
+  background: color-mix(in srgb, var(--btn-5) 16%, transparent);
+  border-color: color-mix(in srgb, var(--btn-5) 42%, var(--border));
+  color: inherit;
+  box-shadow: inset 4px 0 0 var(--btn-5);
 }
 .chart-item.active[data-button='6B'] {
-  background: var(--btn-6);
-  border-color: var(--btn-6);
-  color: var(--btn-6-ink);
+  background: color-mix(in srgb, var(--btn-6) 18%, transparent);
+  border-color: color-mix(in srgb, var(--btn-6) 42%, var(--border));
+  color: inherit;
+  box-shadow: inset 4px 0 0 var(--btn-6);
 }
 .chart-item.active[data-button='8B'] {
-  background: var(--btn-8);
-  border-color: var(--btn-8);
-  color: var(--btn-8-ink);
-}
-
-[data-theme='light'] .chart-item.active[data-button='4B'] {
-  color: var(--btn-4-ink);
-}
-[data-theme='light'] .chart-item.active[data-button='5B'] {
-  color: var(--btn-5-ink);
-}
-[data-theme='light'] .chart-item.active[data-button='6B'] {
-  color: var(--btn-6-ink);
-}
-[data-theme='light'] .chart-item.active[data-button='8B'] {
-  color: var(--btn-8-ink);
+  background: color-mix(in srgb, var(--btn-8) 16%, transparent);
+  border-color: color-mix(in srgb, var(--btn-8) 42%, var(--border));
+  color: inherit;
+  box-shadow: inset 4px 0 0 var(--btn-8);
 }
 
 .overview-search {
@@ -1071,11 +1081,77 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--panel-soft);
-  padding: 14px 18px 6px;
+  padding: 10px 18px 6px 6px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 2px;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.daily-best-list.is-reordering {
+  user-select: none;
+}
+
+.daily-best-card.is-shifting {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.daily-best-card.is-lifted {
+  position: relative;
+  z-index: 4;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .daily-best-card.is-shifting {
+    transition: none;
+  }
+}
+
+.daily-best-card-body {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  transition: border-color 160ms ease, background 160ms ease;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.order-handle {
+  width: 28px;
+  flex: 0 0 28px;
+  height: 32px;
+  margin-top: 2px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: grab;
+  display: grid;
+  place-items: center;
+  touch-action: none;
+}
+
+.order-handle:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.order-handle:active {
+  cursor: grabbing;
+}
+
+.order-grip {
+  width: 14px;
+  height: 18px;
+  display: block;
 }
 
 .daily-best-card:hover {

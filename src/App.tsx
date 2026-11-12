@@ -7,6 +7,7 @@ import {
   type ArchiveBestMap,
 } from './lib/archiveApi'
 import { shouldFetchArchiveBest } from './lib/archiveRefresh'
+import { compareChartOrder } from './lib/chartIdentity'
 import { AddChartModal } from './components/AddChartModal'
 import { ApiSetupModal } from './components/ApiSetupModal'
 import { BackupModal } from './components/BackupModal'
@@ -45,6 +46,7 @@ export default function App() {
     latestPlay,
     addChart,
     deleteChart,
+    reorderCharts,
     addPlay,
     deletePlay,
     importLogPlays,
@@ -214,12 +216,7 @@ export default function App() {
 
   const sortedCharts = useMemo(
     () =>
-      [...data.charts].sort((a, b) =>
-        `${a.button}${a.difficulty}${a.title}`.localeCompare(
-          `${b.button}${b.difficulty}${b.title}`,
-          'ko',
-        ),
-      ),
+      [...data.charts].sort(compareChartOrder),
     [data.charts],
   )
 
@@ -262,6 +259,7 @@ export default function App() {
               setBackupMsg(null)
               setBackupOpen(true)
             }}
+            onReorder={reorderCharts}
           />
         )}
         {activeTab === 'chart' && (

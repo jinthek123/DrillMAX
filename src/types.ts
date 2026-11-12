@@ -7,6 +7,8 @@ export interface Chart {
   button: ButtonMode
   difficulty: Difficulty
   createdAt: string
+  /** 직접 정렬 순서. 작을수록 위 */
+  order?: number
   /** V-ARCHIVE에 저장된 최고기록 (미갱신 시 기준선용) */
   archiveBest?: number
 }

@@ -20,6 +20,8 @@ export interface DrillMaxPattern {
   maxCombo?: boolean
   /** V-ARCHIVE PB */
   archiveBest?: number
+  /** 전체 성과·사이드바의 직접 정렬 순서 */
+  order?: number
   /** 단일 곡: 모든 플레이 (시·분·초 포함) */
   plays?: Array<{
     id?: string
@@ -152,6 +154,7 @@ export function toDrillMaxFile(
       maxCombo: bestPlay?.maxCombo,
       archiveBest:
         chart.archiveBest != null ? round2(chart.archiveBest) : undefined,
+      order: chart.order,
       plays:
         plays.length > 0
           ? plays.map((p) => ({
@@ -205,6 +208,7 @@ export function fromDrillMaxFile(file: DrillMaxFile): AppData {
           difficulty,
           createdAt: file.updatedAt || new Date().toISOString(),
           archiveBest: pat.archiveBest,
+          order: typeof pat.order === 'number' ? pat.order : undefined,
         })
 
         if (Array.isArray(pat.plays) && pat.plays.length > 0) {

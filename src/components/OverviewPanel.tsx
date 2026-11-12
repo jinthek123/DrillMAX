@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import type { AppData, ButtonMode } from '../types'
 import { DAILY_BEST_KEEP_DAYS } from '../lib/dailyBest'
 import {
@@ -7,18 +7,58 @@ import {
   type ButtonFilter,
   type ChartOverviewRow,
 } from '../lib/overviewStats'
+import { compareChartOrder } from '../lib/chartIdentity'
 import { DailyBestCard } from './DailyBestCard'
 
-type SortKey = 'title' | 'best' | 'plays' | 'latest' | 'pending'
+type SortKey = 'manual' | 'title' | 'best' | 'plays' | 'latest' | 'pending'
 
 interface OverviewPanelProps {
   data: AppData
   onOpenChart: (chartId: string) => void
   onOpenImport: () => void
   onExport: () => void
+  onReorder: (orderedIds: string[]) => void
 }
 
 const BUTTONS: ButtonFilter[] = ['ALL', '4B', '5B', '6B', '8B']
+const LIST_GAP = 12
+
+interface RowDrag {
+  id: string
+  from: number
+  to: number
+  startY: number
+  dy: number
+  slot: number
+  tops: number[]
+  heights: number[]
+}
+
+function nearestIndex(clientY: number, tops: number[], heights: number[]) {
+  let best = 0
+  let bestDist = Number.POSITIVE_INFINITY
+  for (let i = 0; i < tops.length; i++) {
+    const mid = tops[i] + heights[i] / 2
+    const dist = Math.abs(clientY - mid)
+    if (dist < bestDist) {
+      bestDist = dist
+      best = i
+    }
+  }
+  return best
+}
+
+function cardShift(index: number, drag: RowDrag | null) {
+  if (!drag) return 0
+  if (index === drag.from) return drag.dy
+  if (drag.from < drag.to && index > drag.from && index <= drag.to) {
+    return -drag.slot
+  }
+  if (drag.to < drag.from && index >= drag.to && index < drag.from) {
+    return drag.slot
+  }
+  return 0
+}
 
 function sortRows(rows: ChartOverviewRow[], key: SortKey): ChartOverviewRow[] {
   const copy = rows.slice()
@@ -35,6 +75,8 @@ function sortRows(rows: ChartOverviewRow[], key: SortKey): ChartOverviewRow[] {
         const bt = b.latest ? new Date(b.latest.playedAt).getTime() : 0
         return bt - at
       }
+      case 'manual':
+        return compareChartOrder(a.chart, b.chart)
       case 'title':
       default:
         return `${a.chart.button}${a.chart.difficulty}${a.chart.title}`.localeCompare(
@@ -51,10 +93,15 @@ export function OverviewPanel({
   onOpenChart,
   onOpenImport,
   onExport,
+  onReorder,
 }: OverviewPanelProps) {
   const [button, setButton] = useState<ButtonFilter>('ALL')
   const [query, setQuery] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('latest')
+  const [drag, setDrag] = useState<RowDrag | null>(null)
+  const listRef = useRef<HTMLElement>(null)
+  const dragRef = useRef<RowDrag | null>(null)
+  const flipFrom = useRef<Map<string, number> | null>(null)
 
   const allRows = useMemo(() => buildChartOverview(data), [data])
   const filtered = useMemo(() => {
@@ -78,6 +125,85 @@ export function OverviewPanel({
     [filtered, data.plays, filteredChartIds],
   )
   const rows = useMemo(() => sortRows(filtered, sortKey), [filtered, sortKey])
+
+  useLayoutEffect(() => {
+    const from = flipFrom.current
+    const list = listRef.current
+    if (!from || !list) return
+    flipFrom.current = null
+    list.querySelectorAll<HTMLElement>('[data-chart-id]').forEach((node) => {
+      const id = node.dataset.chartId
+      if (!id) return
+      const before = from.get(id)
+      if (before == null) return
+      const dy = before - node.getBoundingClientRect().top
+      if (Math.abs(dy) < 1) return
+      node.animate(
+        [{ transform: `translateY(${dy}px)` }, { transform: 'none' }],
+        { duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+      )
+    })
+  })
+
+  const beginDrag = (event: ReactPointerEvent<HTMLButtonElement>, id: string) => {
+    if (event.button !== 0) return
+    const list = listRef.current
+    if (!list) return
+    const cards = [...list.querySelectorAll<HTMLElement>('[data-chart-id]')]
+    const from = cards.findIndex((node) => node.dataset.chartId === id)
+    if (from < 0) return
+    const rects = cards.map((node) => node.getBoundingClientRect())
+    event.preventDefault()
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId)
+    } catch {
+      /* 캡처할 포인터가 없으면 버튼 위 이동만 따라간다 */
+    }
+    const next: RowDrag = {
+      id,
+      from,
+      to: from,
+      startY: event.clientY,
+      dy: 0,
+      slot: rects[from].height + LIST_GAP,
+      tops: rects.map((rect) => rect.top),
+      heights: rects.map((rect) => rect.height),
+    }
+    dragRef.current = next
+    setDrag(next)
+  }
+
+  const moveDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    const prev = dragRef.current
+    if (!prev) return
+    const to = nearestIndex(event.clientY, prev.tops, prev.heights)
+    const dy = event.clientY - prev.startY
+    if (to === prev.to && dy === prev.dy) return
+    const next = { ...prev, to, dy }
+    dragRef.current = next
+    setDrag(next)
+  }
+
+  const endDrag = (commit: boolean) => {
+    const current = dragRef.current
+    dragRef.current = null
+    const list = listRef.current
+    if (commit && current && current.to !== current.from && list) {
+      const tops = new Map<string, number>()
+      list.querySelectorAll<HTMLElement>('[data-chart-id]').forEach((node) => {
+        const id = node.dataset.chartId
+        if (id) tops.set(id, node.getBoundingClientRect().top)
+      })
+      flipFrom.current = tops
+      const ids = rows.map((row) => row.chart.id)
+      const next = ids.slice()
+      const [moved] = next.splice(current.from, 1)
+      next.splice(current.to, 0, moved)
+      onReorder(next)
+      setSortKey('manual')
+    }
+    setDrag(null)
+  }
 
   return (
     <main className="main overview-main">
@@ -155,6 +281,7 @@ export function OverviewPanel({
             value={sortKey}
             onChange={(e) => setSortKey(e.target.value as SortKey)}
           >
+            <option value="manual">내 순서</option>
             <option value="latest">최근 플레이</option>
             <option value="best">Best 높은 순</option>
             <option value="plays">플레이 많은 순</option>
@@ -164,7 +291,11 @@ export function OverviewPanel({
         </label>
       </section>
 
-      <section className="daily-best-list" aria-label="Daily Best">
+      <section
+        ref={listRef}
+        className={`daily-best-list${drag ? ' is-reordering' : ''}`}
+        aria-label="Daily Best"
+      >
         {rows.length === 0 ? (
           <p className="muted overview-empty">
             {data.charts.length === 0
@@ -172,13 +303,20 @@ export function OverviewPanel({
               : '필터에 맞는 차트가 없습니다.'}
           </p>
         ) : (
-          rows.map((r) => (
+          rows.map((r, index) => (
             <DailyBestCard
               key={r.chart.id}
               chart={r.chart}
               latest={r.latest}
               highest={r.highest}
               dailyBests={data.dailyBests}
+              lifted={drag?.id === r.chart.id}
+              sliding={drag != null && drag.id !== r.chart.id}
+              shiftY={cardShift(index, drag)}
+              onGripPointerDown={(event) => beginDrag(event, r.chart.id)}
+              onGripPointerMove={moveDrag}
+              onGripPointerUp={() => endDrag(true)}
+              onGripPointerCancel={() => endDrag(false)}
               onOpen={() => onOpenChart(r.chart.id)}
             />
           ))
