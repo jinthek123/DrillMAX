@@ -4,15 +4,14 @@ import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url))
-// 개발 빌드만 이 저장소의 data 경로를 넣는다. 설치본에는 PC 경로를 넣지 않는다.
-const dataFile =
-  process.env.TAURI_ENV_DEBUG === 'false'
-    ? ''
-    : path.join(rootDir, 'data', 'drillMax.json')
-
 const host = process.env.TAURI_DEV_HOST
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  // vite build(설치본)는 production. 개발 서버만 이 저장소의 data 경로를 넣는다.
+  const dataFile =
+    mode === 'production' ? '' : path.join(rootDir, 'data', 'drillMax.json')
+
+  return {
   plugins: [react()],
   define: {
     __DRILLMAX_DATA_FILE__: JSON.stringify(dataFile),
@@ -43,4 +42,4 @@ export default defineConfig({
     minify: !process.env.TAURI_ENV_DEBUG,
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
   },
-})
+}})
