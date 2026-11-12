@@ -13,8 +13,9 @@ V-ARCHIVE 클라이언트에 표시되는 **로그 텍스트**를 읽어, 공식
 
 [다운로드 (Releases)](https://github.com/jinthek123/DrillMAX/releases) · [버그·문의 (Issues)](https://github.com/jinthek123/DrillMAX/issues)
 
-<img width="1601" height="1065" alt="전체 성과" src="https://github.com/user-attachments/assets/0ef13276-f241-4010-b69a-0ac28df072da" />
-<img width="1601" height="1065" alt="단일 곡 기록" src="https://github.com/user-attachments/assets/a2ec9fdc-3a52-49fd-b6a1-36f6b596642d" />
+<img width="1601" height="1065" alt="image" src="https://github.com/user-attachments/assets/91c8589c-9994-4ed0-a202-99171f887765" />
+<img width="1601" height="1065" alt="image" src="https://github.com/user-attachments/assets/089658be-245e-4cfb-9e96-db97312fb397" />
+
 
 ---
 
