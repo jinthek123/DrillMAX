@@ -20,7 +20,7 @@ function FloorMark({ floorName, delta }: { floorName: string; delta?: number }) 
   )
 }
 
-function TagList({ tags }: { tags: TagChip[] }) {
+export function TagList({ tags }: { tags: TagChip[] }) {
   return (
     <div className="recommend-tags">
       {tags.map((tag) => (
@@ -54,36 +54,47 @@ function RerollIcon() {
   )
 }
 
+function SectionHead({
+  title,
+  canReroll,
+  onReroll,
+}: {
+  title: string
+  canReroll: boolean
+  onReroll: () => void
+}) {
+  return (
+    <div className="recommend-section-head">
+      <h2>
+        <Hang2botName /> {title}
+      </h2>
+      <button
+        type="button"
+        className="reroll-btn"
+        aria-label={`${title} 다시 뽑기`}
+        title="다시 뽑기"
+        onClick={onReroll}
+        disabled={!canReroll}
+      >
+        <RerollIcon />
+      </button>
+    </div>
+  )
+}
+
 function RecommendColumn({
   title,
   button,
   picks,
   tagsFor,
-  onReroll,
 }: {
   title: string
   button: string
   picks: RecommendPick[]
   tagsFor: (pick: RecommendPick) => TagChip[]
-  onReroll: () => void
 }) {
   return (
     <section className="recommend-section" aria-label={`행이봇 ${title}`}>
-      <div className="recommend-section-head">
-        <h2>
-          <Hang2botName /> {title}
-        </h2>
-        <button
-          type="button"
-          className="reroll-btn"
-          aria-label={`${title} 다시 뽑기`}
-          title="다시 뽑기"
-          onClick={onReroll}
-          disabled={picks.length === 0}
-        >
-          <RerollIcon />
-        </button>
-      </div>
       <ol className="recommend-list">
         {picks.map((pick, index) => (
           <li key={`${pick.title}-${pick.pattern}`} className="recommend-card">
@@ -123,21 +134,33 @@ export function RecommendColumns({
   onRerollRests: () => void
 }) {
   return (
-    <div className="recommend-columns">
-      <RecommendColumn
-        title="상수 기반 추천곡"
-        button={button}
-        picks={picks}
-        tagsFor={(pick) => pick.sharedTags}
-        onReroll={onRerollPicks}
-      />
-      <RecommendColumn
-        title="상수 기반 쉬는곡"
-        button={button}
-        picks={rests}
-        tagsFor={(pick) => pick.tags}
-        onReroll={onRerollRests}
-      />
+    <div className="recommend-board">
+      <div className="recommend-heads">
+        <SectionHead
+          title="상수 기반 추천곡"
+          canReroll={picks.length > 0}
+          onReroll={onRerollPicks}
+        />
+        <SectionHead
+          title="상수 기반 쉬는곡"
+          canReroll={rests.length > 0}
+          onReroll={onRerollRests}
+        />
+      </div>
+      <div className="recommend-columns">
+        <RecommendColumn
+          title="상수 기반 추천곡"
+          button={button}
+          picks={picks}
+          tagsFor={(pick) => pick.sharedTags}
+        />
+        <RecommendColumn
+          title="상수 기반 쉬는곡"
+          button={button}
+          picks={rests}
+          tagsFor={(pick) => pick.tags}
+        />
+      </div>
     </div>
   )
 }
@@ -147,21 +170,16 @@ export function SeedFaceMeta({
   pattern,
   level,
   floorName,
-  tags,
 }: {
   button: string
   pattern: string
   level?: number
   floorName: string
-  tags: TagChip[]
 }) {
   return (
-    <>
-      <p className="main-meta recommend-mode-line">
-        <ChartBadges button={button} difficulty={pattern} level={level} />
-        {floorName ? <FloorMark floorName={floorName} /> : null}
-      </p>
-      <TagList tags={tags} />
-    </>
+    <p className="main-meta recommend-mode-line">
+      <ChartBadges button={button} difficulty={pattern} level={level} />
+      {floorName ? <FloorMark floorName={floorName} /> : null}
+    </p>
   )
 }

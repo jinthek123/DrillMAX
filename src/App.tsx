@@ -13,6 +13,7 @@ import { ApiSetupModal } from './components/ApiSetupModal'
 import { BackupModal } from './components/BackupModal'
 import { ImportLogModal } from './components/ImportLogModal'
 import { AppTabs, type AppTabId } from './components/AppTabs'
+import { InfoPanel } from './components/InfoPanel'
 import { LiveBadge } from './components/LiveBadge'
 import { AiRecommendPanel } from './components/AiRecommendPanel'
 import { OverviewPanel } from './components/OverviewPanel'
@@ -306,6 +307,7 @@ export default function App() {
             onSelect={setSelectedId}
           />
         )}
+        {activeTab === 'info' && <InfoPanel />}
       </div>
 
       <AddChartModal

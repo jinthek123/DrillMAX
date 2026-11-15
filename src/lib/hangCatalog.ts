@@ -1,7 +1,3 @@
-import catalog4 from '../../../DrillMAX-dev-data/dev-data/hang2bot-4b.json'
-import catalog5 from '../../../DrillMAX-dev-data/dev-data/hang2bot-5b.json'
-import catalog6 from '../../../DrillMAX-dev-data/dev-data/hang2bot-6b.json'
-import catalog8 from '../../../DrillMAX-dev-data/dev-data/hang2bot-8b.json'
 import type { ButtonMode } from '../types'
 
 export interface HangSong {
@@ -9,23 +5,28 @@ export interface HangSong {
   pattern: string
   /** 게임 표기 레벨. SC 배지 색 구간용 */
   level?: number
-  difficulty: number
   floor: number
   floorName: string
   tags?: Record<string, number>
-  sync_run_id?: string
 }
 
 interface HangFile {
   button: number
+  syncId: string
   songs: HangSong[]
 }
 
+const BUTTONS: ButtonMode[] = ['4B', '5B', '6B', '8B']
+
+function emptyFile(button: ButtonMode): HangFile {
+  return { button: Number(button.replace('B', '')), syncId: '', songs: [] }
+}
+
 const catalogs: Record<ButtonMode, HangFile> = {
-  '4B': catalog4 as unknown as HangFile,
-  '5B': catalog5 as unknown as HangFile,
-  '6B': catalog6 as unknown as HangFile,
-  '8B': catalog8 as unknown as HangFile,
+  '4B': emptyFile('4B'),
+  '5B': emptyFile('5B'),
+  '6B': emptyFile('6B'),
+  '8B': emptyFile('8B'),
 }
 
 const listeners = new Set<() => void>()
@@ -46,10 +47,38 @@ export function hangCatalog(button: ButtonMode): HangFile {
 }
 
 export function hangSyncId(button: ButtonMode): string {
-  for (const song of catalogs[button].songs) {
-    if (song.sync_run_id) return song.sync_run_id
+  return catalogs[button].syncId
+}
+
+export function rememberSyncId(button: ButtonMode, syncId: string) {
+  if (!syncId || catalogs[button].syncId === syncId) return
+  catalogs[button] = { ...catalogs[button], syncId }
+}
+
+/** 지금 보는 버튼만 곡 목록을 들고 있는다. 동기화 번호는 남겨 둔다. */
+export function focusHangCatalog(button: ButtonMode) {
+  for (const key of BUTTONS) {
+    if (key === button || catalogs[key].songs.length === 0) continue
+    catalogs[key] = { ...catalogs[key], songs: [] }
   }
-  return ''
+}
+
+function readSyncId(value: unknown): string {
+  if (!value || typeof value !== 'object') return ''
+  const id = (value as { sync_run_id?: unknown }).sync_run_id
+  return typeof id === 'string' ? id : ''
+}
+
+function copyTags(value: unknown): Record<string, number> | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const tags: Record<string, number> = {}
+  for (const [name, score] of Object.entries(value)) {
+    if (!name.trim() || typeof score !== 'number' || !Number.isFinite(score) || score <= 0) {
+      continue
+    }
+    tags[name] = score
+  }
+  return Object.keys(tags).length > 0 ? tags : undefined
 }
 
 function asHangSong(value: unknown): HangSong | null {
@@ -63,23 +92,30 @@ function asHangSong(value: unknown): HangSong | null {
     title: typeof song.title === 'string' ? song.title : '',
     pattern: song.pattern,
     level: typeof song.level === 'number' ? song.level : undefined,
-    difficulty: typeof song.difficulty === 'number' ? song.difficulty : song.floor / 10,
     floor: song.floor,
     floorName: song.floorName,
-    tags: song.tags && typeof song.tags === 'object' ? song.tags : undefined,
-    sync_run_id: typeof song.sync_run_id === 'string' ? song.sync_run_id : undefined,
+    tags: copyTags(song.tags),
   }
 }
 
-export function installHangCatalog(button: ButtonMode, rawSongs: unknown[]): boolean {
+export function installHangCatalog(
+  button: ButtonMode,
+  rawSongs: unknown[],
+  knownSyncId = '',
+): boolean {
   const songs: HangSong[] = []
+  let syncId = knownSyncId
   for (const raw of rawSongs) {
+    if (!syncId) syncId = readSyncId(raw)
     const song = asHangSong(raw)
-    if (!song) continue
-    songs.push(song)
+    if (song) songs.push(song)
   }
-  if (songs.length === 0 || !songs.some((song) => song.sync_run_id)) return false
-  catalogs[button] = { button: Number(button.replace('B', '')), songs }
+  if (songs.length === 0 || !syncId) return false
+  catalogs[button] = {
+    button: Number(button.replace('B', '')),
+    syncId,
+    songs,
+  }
   notifyHangCatalog()
   return true
 }

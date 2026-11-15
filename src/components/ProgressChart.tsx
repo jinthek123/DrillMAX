@@ -27,6 +27,7 @@ import { HighestReferenceLine } from './ShortHighestMark'
 interface ProgressChartProps {
   plays: Play[]
   highest: number | null
+  archiveBest?: number | null
 }
 
 function dotFill(payload?: ProgressPoint): string {
@@ -146,8 +147,15 @@ function AxisTick({
   )
 }
 
-function ProgressChartInner({ plays, highest }: ProgressChartProps) {
-  const data = useMemo(() => buildProgressPoints(plays), [plays])
+function ProgressChartInner({
+  plays,
+  highest,
+  archiveBest,
+}: ProgressChartProps) {
+  const data = useMemo(
+    () => buildProgressPoints(plays, archiveBest),
+    [plays, archiveBest],
+  )
 
   const scale = useMemo(() => {
     const values = data

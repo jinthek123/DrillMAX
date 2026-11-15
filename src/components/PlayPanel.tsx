@@ -125,7 +125,11 @@ export function PlayPanel({
           <span className="legend-score">모든 기록</span>
           <span className="legend-record">HR</span>
         </div>
-        <ProgressChart plays={plays} highest={highest} />
+        <ProgressChart
+          plays={plays}
+          highest={highest}
+          archiveBest={chart.archiveBest}
+        />
       </section>
 
       <section className="entry-section">

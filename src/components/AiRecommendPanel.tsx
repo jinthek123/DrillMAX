@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { recommendForChart } from '../lib/elixirRecommend'
+import { focusHangCatalog } from '../lib/hangCatalog'
+import { ensureHangCatalog } from '../lib/hang2botSync'
 import type { Chart } from '../types'
 import { Hang2botName } from './Hang2botName'
 import { HangSyncFooter, useHangCatalogVersion } from './recommend/HangSyncFooter'
@@ -20,12 +22,29 @@ export function AiRecommendPanel({
   const chart = charts[index]
   const catalogVersion = useHangCatalogVersion()
   const [rollState, setRollState] = useState({ id: '', picks: 0, rests: 0 })
+  const [loadedButton, setLoadedButton] = useState('')
   const chartId = chart?.id ?? ''
   const rolls =
     rollState.id === chartId ? rollState : { id: chartId, picks: 0, rests: 0 }
+  const catalogReady = chart != null && loadedButton === chart.button
+
+  useEffect(() => {
+    if (!chart) return
+    let cancel = false
+    const button = chart.button
+    void ensureHangCatalog(button).finally(() => {
+      if (cancel) return
+      focusHangCatalog(button)
+      setLoadedButton(button)
+    })
+    return () => {
+      cancel = true
+    }
+  }, [chart, catalogVersion])
+
   const recommendation = useMemo(
     () =>
-      chart
+      chart && catalogReady
         ? recommendForChart(
             {
               title: chart.title,
@@ -35,7 +54,7 @@ export function AiRecommendPanel({
             { picks: rolls.picks, rests: rolls.rests },
           )
         : null,
-    [chart, rolls.picks, rolls.rests, catalogVersion],
+    [chart, catalogReady, rolls.picks, rolls.rests, catalogVersion],
   )
 
   useEffect(() => {
@@ -64,13 +83,13 @@ export function AiRecommendPanel({
         </header>
       )}
 
-      {chart && !recommendation?.floorName ? (
+      {chart && catalogReady && recommendation && !recommendation.floorName ? (
         <div className="recommend-unassigned">
           <p>
             아직 <Hang2botName /> 상수가 배정되지 않았습니다.
           </p>
         </div>
-      ) : (
+      ) : !chart || catalogReady ? (
         <RecommendColumns
           button={button}
           picks={picks}
@@ -90,7 +109,7 @@ export function AiRecommendPanel({
             })
           }
         />
-      )}
+      ) : null}
       <HangSyncFooter />
     </main>
   )

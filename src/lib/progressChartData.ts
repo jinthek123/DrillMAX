@@ -18,7 +18,7 @@ export interface ProgressPoint {
   dayBreak: boolean
   maxCombo?: boolean
   perfectPlay?: boolean
-  /** 미갱신이 아닌 기록 중, 직전 최고를 넘긴 최종 BEST */
+  /** 그때의 최고 기록이었던 log. 이후 기록이 더 높아도 유지한다. */
   hrUpdate?: boolean
 }
 
@@ -75,13 +75,16 @@ function withVisibleLabels(
  * - 기록: 시각 라벨. 바로 옆 칸에 날짜가 있으면 시각은 숨긴다.
  * - 날짜 변경: 점과 점 사이 MM/DD (정각 기록은 그 점에 MM/DD)
  */
-export function buildProgressPoints(plays: Play[]): ProgressPoint[] {
+export function buildProgressPoints(
+  plays: Play[],
+  archiveBest?: number | null,
+): ProgressPoint[] {
   const dense = plays.length > 8
   const timeFmt = dense ? formatTimeAxisShort : formatTimeAxis
   const rows: ProgressPoint[] = []
   let prevDay: string | null = null
-  let hrBest: number | null = null
-  let hrBestRow: number | null = null
+  let record = archiveBest ?? null
+  let matchedRecord = false
 
   plays.forEach((p, i) => {
     const day = localDayKey(p.playedAt)
@@ -111,14 +114,18 @@ export function buildProgressPoints(plays: Play[]): ProgressPoint[] {
       maxCombo: p.maxCombo,
       perfectPlay: isPerfectPlay(p.accuracy, p.maxCombo),
     })
-    if (p.status !== '미갱신' && (hrBest == null || p.accuracy > hrBest)) {
-      hrBest = p.accuracy
-      hrBestRow = rows.length - 1
+    if (p.status !== '미갱신' && (record == null || p.accuracy >= record)) {
+      if (record == null || p.accuracy > record) {
+        record = p.accuracy
+        matchedRecord = false
+      }
+      if (!matchedRecord && p.source === 'log') {
+        rows[rows.length - 1].hrUpdate = true
+        matchedRecord = true
+      }
     }
     prevDay = day
   })
-
-  if (hrBestRow != null) rows[hrBestRow].hrUpdate = true
 
   return withVisibleLabels(rows, maxTimeLabels(plays.length))
 }

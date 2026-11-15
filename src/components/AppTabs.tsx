@@ -1,11 +1,12 @@
 import { Hang2botName } from './Hang2botName'
 
-export type AppTabId = 'overview' | 'chart' | 'ai'
+export type AppTabId = 'overview' | 'chart' | 'ai' | 'info'
 
 const TABS: { id: AppTabId; label: string }[] = [
   { id: 'overview', label: '전체 성과' },
   { id: 'chart', label: '단일 곡 기록' },
   { id: 'ai', label: '행이봇 x DrillMAX' },
+  { id: 'info', label: 'INFO' },
 ]
 
 interface AppTabsProps {
@@ -20,7 +21,7 @@ export function AppTabs({ active, onChange }: AppTabsProps) {
         <button
           key={tab.id}
           type="button"
-          className={`app-tab${active === tab.id ? ' active' : ''}`}
+          className={`app-tab${tab.id === 'info' ? ' app-tab-end' : ''}${active === tab.id ? ' active' : ''}`}
           onClick={() => onChange(tab.id)}
         >
           {tab.id === 'ai' ? (

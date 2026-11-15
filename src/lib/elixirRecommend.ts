@@ -65,6 +65,29 @@ function similarity(seed: Map<string, number>, other: Map<string, number>): numb
   return dot / Math.sqrt(seedNorm * otherNorm)
 }
 
+const TAG3_FLOOR_WORTH = 2
+const COSINE_WEIGHT = 0.45
+
+/** 서로 상수 3인 태그 개수. 1·2와 깨진 큰 숫자는 넣지 않는다. */
+function highTagLink(seed: Map<string, number>, other: Map<string, number>): number {
+  let link = 0
+  for (const [name, score] of seed) {
+    if (score !== 3 || other.get(name) !== 3) continue
+    link += score * 3
+  }
+  return link
+}
+
+/**
+ * 추천 적합도. 클수록 앞.
+ * 가까운 층이 기본이고, 상수 3을 하나 공유하면 약 0.2층 떨어진 것까지 같은 층보다 앞선다.
+ * 유사도는 그 차이를 뒤집지 못할 만큼만 더한다.
+ */
+function recommendFit(row: RankedSong): number {
+  const sharedThrees = row.highLink / 9
+  return sharedThrees * TAG3_FLOOR_WORTH + row.score * COSINE_WEIGHT - Math.abs(row.floorDelta)
+}
+
 function sharedTags(seed: Map<string, number>, other: Map<string, number>): TagChip[] {
   const shared = new Map<string, number>()
   for (const [name, score] of other) {
@@ -78,6 +101,7 @@ interface RankedSong {
   song: HangSong
   tags: Map<string, number>
   score: number
+  highLink: number
   floorDelta: number
 }
 
@@ -123,6 +147,7 @@ function rankSongs(songs: HangSong[], seed: HangSong, seedTags: Map<string, numb
         song,
         tags,
         score: similarity(seedTags, tags),
+        highLink: highTagLink(seedTags, tags),
         floorDelta: song.floor - seed.floor,
       }
     })
@@ -180,12 +205,7 @@ export function recommendForChart(
     pickRoll === 0
       ? eligible
           .slice()
-          .sort(
-            (a, b) =>
-              Math.abs(a.floorDelta) - Math.abs(b.floorDelta) ||
-              b.score - a.score ||
-              byTitle(a, b),
-          )
+          .sort((a, b) => recommendFit(b) - recommendFit(a) || byTitle(a, b))
       : shuffle(
           eligible,
           rollRandom(seedSong.title, seedSong.pattern, pickRoll, 1),

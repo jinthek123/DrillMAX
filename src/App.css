@@ -50,6 +50,83 @@
   box-shadow: inset 0 -2px 0 var(--accent);
 }
 
+.app-tab-end {
+  margin-left: auto;
+}
+
+.info-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-group {
+  background: var(--panel-soft);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 18px 20px 6px;
+  box-shadow: var(--shadow);
+}
+
+.info-group > h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: -0.03em;
+}
+
+.info-shots {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-shot {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 16px 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+}
+
+.info-shot:last-child {
+  border-bottom: none;
+}
+
+.info-figure {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #140a22;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  line-height: 0;
+}
+
+.info-figure img {
+  display: block;
+  width: auto;
+  max-width: min(100%, 820px);
+  height: auto;
+  border-radius: 0;
+}
+
+.info-shot h3 {
+  margin: 0 0 4px;
+  font-size: 1.02rem;
+  letter-spacing: -0.02em;
+}
+
+.info-shot p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
 .workspace > .main {
   flex: 1;
   min-height: 0;
@@ -591,23 +668,44 @@
 
 .recommend-main {
   overflow: hidden;
-  padding-bottom: 16px;
+  gap: 10px;
+  padding-top: 12px;
+  padding-bottom: 12px;
 }
 
 .recommend-main > .main-head {
   flex: 0 0 auto;
 }
 
+.recommend-board {
+  --recommend-scroll-pad: 12px;
+  --recommend-scrollbar: 10px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.recommend-heads {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 16px;
+  padding-right: calc(var(--recommend-scroll-pad) + var(--recommend-scrollbar));
+  padding-bottom: 10px;
+}
+
 .recommend-columns {
   flex: 1;
   min-height: 0;
   overflow: auto;
+  scrollbar-gutter: stable;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: auto repeat(5, auto);
+  grid-template-rows: repeat(5, auto);
   column-gap: 16px;
   row-gap: 10px;
-  padding-right: 12px;
+  padding-right: var(--recommend-scroll-pad);
 }
 
 .recommend-section {
@@ -665,16 +763,17 @@
   padding: 0;
   display: grid;
   grid-template-rows: subgrid;
-  grid-row: 2 / span 5;
+  grid-row: 1 / span 5;
 }
 
 .recommend-card {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
   height: 100%;
   box-sizing: border-box;
-  padding: 16px 18px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--panel);
@@ -684,6 +783,8 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .recommend-card-head strong {
@@ -692,7 +793,7 @@
 }
 
 .recommend-card-head .main-meta {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
 }
 
 .recommend-mode-line {
@@ -713,7 +814,7 @@
 }
 
 .seed-face .recommend-mode-line {
-  margin-top: 16px;
+  margin-top: 10px;
 }
 
 .stair-icon {
@@ -746,8 +847,12 @@
   margin-top: 12px;
 }
 
-.recommend-card .recommend-tags {
-  margin-top: 0;
+.recommend-card .recommend-tags,
+.seed-face > .recommend-tags {
+  flex: 0 1 42%;
+  justify-content: flex-end;
+  align-content: center;
+  margin: 0;
 }
 
 .recommend-tag {
@@ -839,7 +944,7 @@
 
 .seed-nav {
   width: 36px;
-  height: 168px;
+  height: 132px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--panel);
@@ -912,9 +1017,9 @@
 .seed-stage {
   --drag: 0deg;
   --arc-radius: 340px;
-  --card-y: 164px;
+  --card-y: 118px;
   position: relative;
-  height: 272px;
+  height: 200px;
   overflow: hidden;
   touch-action: pan-y;
   container-type: inline-size;
@@ -967,13 +1072,16 @@
   top: 0;
   width: 58cqi;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
   text-align: left;
   border: 1px solid var(--border);
   border-radius: 18px;
   background: var(--panel-soft);
   box-shadow: var(--shadow);
-  min-height: 172px;
-  padding: 18px 20px 20px;
+  min-height: 118px;
+  padding: 14px 18px;
   transform: translate(-50%, calc(-50% + var(--arc-radius)))
     rotate(calc((var(--orbit) + var(--drag)) * -1));
   transform-origin: center;
@@ -995,6 +1103,11 @@ button.seed-face {
   color: inherit;
   font: inherit;
   cursor: pointer;
+}
+
+.seed-face-copy {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .seed-face h1 {
@@ -2006,6 +2119,7 @@ button.seed-face {
   .main-head {
     flex-direction: column;
   }
+
 
   .chart-section {
     min-height: 300px;

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import type { ElixirRecommendation, TagChip } from '../../lib/elixirRecommend'
 import type { Chart } from '../../types'
 import { Hang2botName } from '../Hang2botName'
-import { SeedFaceMeta } from './RecommendColumns'
+import { SeedFaceMeta, TagList } from './RecommendColumns'
 
 const SWIPE_THRESHOLD = 48
 
@@ -41,21 +41,23 @@ function SeedCard({
 }) {
   const body = (
     <>
-      {place === 'center' && (
-        <p className="eyebrow">
-          <Hang2botName /> x DrillMAX
-        </p>
-      )}
-      <h1>{chart.title}</h1>
-      {place === 'center' && (
-        <SeedFaceMeta
-          button={chart.button}
-          pattern={chart.difficulty}
-          level={level}
-          floorName={floorName}
-          tags={tags}
-        />
-      )}
+      <div className="seed-face-copy">
+        {place === 'center' && (
+          <p className="eyebrow">
+            <Hang2botName /> x DrillMAX
+          </p>
+        )}
+        <h1>{chart.title}</h1>
+        {place === 'center' && (
+          <SeedFaceMeta
+            button={chart.button}
+            pattern={chart.difficulty}
+            level={level}
+            floorName={floorName}
+          />
+        )}
+      </div>
+      {place === 'center' && tags.length > 0 && <TagList tags={tags} />}
     </>
   )
   return (

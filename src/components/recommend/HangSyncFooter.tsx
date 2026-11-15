@@ -4,7 +4,6 @@ import { openExternalLink } from '../../lib/externalLink'
 import { subscribeHangCatalog } from '../../lib/hangCatalog'
 import {
   hangSyncUsedToday,
-  loadSavedHangCatalogs,
   readHangSync,
   refreshHangCatalogs,
   type HangSyncStatus,
@@ -21,9 +20,7 @@ const SYNC_NOTE: Record<HangSyncStatus, string> = {
 export function useHangCatalogVersion() {
   const [version, setVersion] = useState(0)
   useEffect(() => {
-    const unsubscribe = subscribeHangCatalog(() => setVersion((current) => current + 1))
-    void loadSavedHangCatalogs()
-    return unsubscribe
+    return subscribeHangCatalog(() => setVersion((current) => current + 1))
   }, [])
   return version
 }

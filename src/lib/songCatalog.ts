@@ -1,4 +1,4 @@
-﻿import { archiveUrl } from './bridgeUrl'
+import { archiveUrl } from './bridgeUrl'
 import type { ButtonMode, Difficulty } from '../types'
 const CACHE_KEY = 'drillmax-song-catalog-v1'
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7 // 7일
@@ -34,21 +34,15 @@ export interface SongIndex {
   entries: Array<{ song: SongEntry; name: string; composer: string }>
 }
 
-let memoryRaw: string | null = null
 let memoryPayload: CachePayload | null = null
 
 function readCache(): CachePayload | null {
+  if (memoryPayload) return memoryPayload
   try {
     const raw = localStorage.getItem(CACHE_KEY)
-    if (!raw) {
-      memoryRaw = null
-      memoryPayload = null
-      return null
-    }
-    if (raw === memoryRaw && memoryPayload) return memoryPayload
+    if (!raw) return null
     const parsed = JSON.parse(raw) as CachePayload
     if (!parsed || !Array.isArray(parsed.songs)) return null
-    memoryRaw = raw
     memoryPayload = parsed
     return parsed
   } catch {
@@ -57,10 +51,8 @@ function readCache(): CachePayload | null {
 }
 
 function rememberCache(payload: CachePayload) {
-  const raw = JSON.stringify(payload)
-  memoryRaw = raw
   memoryPayload = payload
-  localStorage.setItem(CACHE_KEY, raw)
+  localStorage.setItem(CACHE_KEY, JSON.stringify(payload))
 }
 
 export function loadCachedSongs(): SongEntry[] {
