@@ -8,6 +8,13 @@ for DJMAX RESPECT V
 V-ARCHIVE 클라이언트에 표시되는 **로그 텍스트**를 읽어, 공식 갱신에서 버려지는 `[미갱신]` 플레이까지 포함해 로컬에 남깁니다.  
 정확도 추이를 그래프로 확인하며 0.01%를 깎는 과정과 결과를 시각적으로 파악할 수 있습니다.
 
+<img width="1601" height="1065" alt="image" src="https://github.com/user-attachments/assets/9e0e4a5e-b198-40d5-95a6-0aaeff6610d3" />
+<img width="1601" height="1065" alt="image" src="https://github.com/user-attachments/assets/e5eecdb8-ed24-4d9d-86fc-0e61cdad594f" />
+<img width="1602" height="1063" alt="image" src="https://github.com/user-attachments/assets/a96cce5e-2d0d-479f-9bee-a8548217eab3" />
+
+
+
+
 > **Unofficial fan-made tool.** DJMAX RESPECT V 및 관련 상표·저작물의 권리는 (주)네오위즈에 있습니다.  
 > 본 프로그램은 네오위즈와 무관한 비공식 팬메이드 도구입니다.
 
