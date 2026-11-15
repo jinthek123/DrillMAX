@@ -260,3 +260,5 @@ npm run pack       # 설치본 빌드
 본 저장소 코드는 [GNU GPL v3](./LICENSE)를 따릅니다.  
 DJMAX RESPECT V / V-ARCHIVE 관련 명칭·에셋의 권리는 각 권리자에게 있습니다.  
 패턴 상수는 [행이봇](https://hang2bot.vercel.app/)의 데이터를 사용합니다.
+
+### Special Thanks to V-Archive, hang2bot. 
