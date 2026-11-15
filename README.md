@@ -86,10 +86,10 @@ DrillMAX를 켜지 못한 채 플레이했다면, **로그 가져오기**에 V-A
 
 | 구분 | 링크 |
 |------|------|
-| 설치본 | [Releases · v1.2.1](https://github.com/jinthek123/DrillMAX/releases/tag/v1.2.1) |
+| 설치본 | [Releases · v1.2.0](https://github.com/jinthek123/DrillMAX/releases/tag/v1.2.0) |
 | 요구 환경 | Windows 10/11, [WebView2](https://developer.microsoft.com/microsoft-edge/webview2/) (대부분 기본 포함) |
 
-설치본은 `DrillMAX_1.2.1_x64-setup.exe`입니다. 변경 내용은 [CHANGELOG](./CHANGELOG.md)에 있습니다.
+설치본은 `DrillMAX_1.2.0_x64-setup.exe`입니다. 변경 내용은 [CHANGELOG](./CHANGELOG.md)에 있습니다.
 
 ---
 
