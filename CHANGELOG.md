@@ -2,6 +2,12 @@
 
 설치본과 소스의 변경입니다. 사용 방법은 [README](./README.md)에 있습니다.
 
+## 1.2.1 — 2026-11-16
+
+설치본은 [v1.2.1](https://github.com/jinthek123/DrillMAX/releases/tag/v1.2.1)의 `DrillMAX_1.2.1_x64-setup.exe`입니다.
+
+- 처음 실행하면 화면이 라이트입니다. 이미 다크로 저장해 둔 설정은 그대로입니다.
+
 ## 1.2.0 — 2026-11-16
 
 설치본은 [v1.2.0](https://github.com/jinthek123/DrillMAX/releases/tag/v1.2.0)의 `DrillMAX_1.2.0_x64-setup.exe`입니다.

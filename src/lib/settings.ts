@@ -15,7 +15,7 @@ const EMPTY: AppSettings = {
   apiToken: '',
   nickname: '',
   setupDone: false,
-  theme: 'dark',
+  theme: 'light',
   backupDir: '',
 }
 
@@ -24,7 +24,7 @@ export function loadSettings(): AppSettings {
     const raw = localStorage.getItem(KEY)
     if (!raw) return { ...EMPTY }
     const parsed = JSON.parse(raw) as Partial<AppSettings>
-    const theme = parsed.theme === 'light' ? 'light' : 'dark'
+    const theme = parsed.theme === 'dark' ? 'dark' : 'light'
     return {
       apiToken: typeof parsed.apiToken === 'string' ? parsed.apiToken : '',
       nickname: typeof parsed.nickname === 'string' ? parsed.nickname : '',
