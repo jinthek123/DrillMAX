@@ -7,13 +7,16 @@ export type ButtonFilter = 'ALL' | ButtonMode
 export interface ChartOverviewRow {
   chart: Chart
   playCount: number
-  best: number | null
   archiveBest: number | null
   highest: number | null
   latest: Play | null
+  /** 마지막 플레이 시각. 플레이가 없으면 null */
+  latestAt: number | null
   ppCount: number
   mcCount: number
   pendingCount: number
+  acc999Count: number
+  acc998Count: number
 }
 
 export interface OverviewSummary {
@@ -39,55 +42,54 @@ export function buildChartOverview(data: AppData): ChartOverviewRow[] {
     const plays = byChart.get(chart.id) ?? []
     const archiveBest = chart.archiveBest ?? null
     const highest = computeHighest(plays, archiveBest)
-    let best: number | null = null
     let latest: Play | null = null
-    let latestAt = Number.NEGATIVE_INFINITY
+    let latestAt: number | null = null
     let ppCount = 0
     let mcCount = 0
     let pendingCount = 0
+    let acc999Count = 0
+    let acc998Count = 0
     for (const p of plays) {
-      if (best == null || p.accuracy > best) best = p.accuracy
       const at = Date.parse(p.playedAt)
-      if (at >= latestAt) {
+      if (Number.isFinite(at) && (latestAt == null || at >= latestAt)) {
         latestAt = at
         latest = p
       }
       if (isPerfectPlay(p.accuracy, p.maxCombo)) ppCount += 1
       else if (p.maxCombo) mcCount += 1
       if (p.status === '미갱신') pendingCount += 1
+      if (p.accuracy >= 99.9) acc999Count += 1
+      if (p.accuracy >= 99.8) acc998Count += 1
     }
     return {
       chart,
       playCount: plays.length,
-      best,
       archiveBest,
       highest,
       latest,
+      latestAt,
       ppCount,
       mcCount,
       pendingCount,
+      acc999Count,
+      acc998Count,
     }
   })
 }
 
-export function summarizeOverview(
-  rows: ChartOverviewRow[],
-  plays: Play[],
-  chartIds?: Set<string>,
-): OverviewSummary {
+export function summarizeOverview(rows: ChartOverviewRow[]): OverviewSummary {
   let playCount = 0
   let ppCount = 0
   let mcCount = 0
   let acc999Count = 0
   let acc998Count = 0
 
-  for (const p of plays) {
-    if (chartIds && !chartIds.has(p.chartId)) continue
-    playCount += 1
-    if (isPerfectPlay(p.accuracy, p.maxCombo)) ppCount += 1
-    else if (p.maxCombo) mcCount += 1
-    if (p.accuracy >= 99.9) acc999Count += 1
-    if (p.accuracy >= 99.8) acc998Count += 1
+  for (const row of rows) {
+    playCount += row.playCount
+    ppCount += row.ppCount
+    mcCount += row.mcCount
+    acc999Count += row.acc999Count
+    acc998Count += row.acc998Count
   }
 
   return {

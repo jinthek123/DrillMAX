@@ -1,5 +1,6 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { validateApiToken } from '../lib/archiveApi'
+import { openExternalLink } from '../lib/externalLink'
 
 interface ApiSetupModalProps {
   open: boolean
@@ -78,6 +79,7 @@ export function ApiSetupModal({
               href="https://v-archive.net/"
               target="_blank"
               rel="noreferrer"
+              onClick={openExternalLink}
             >
               v-archive.net
             </a>{' '}

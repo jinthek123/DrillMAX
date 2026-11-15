@@ -65,6 +65,7 @@ export default function App() {
   const [backupOpen, setBackupOpen] = useState(false)
   const [backupMsg, setBackupMsg] = useState<string | null>(null)
   const [liveEnabled, setLiveEnabled] = useState(true)
+  const [recording, setRecording] = useState(false)
   const [activeTab, setActiveTab] = useState<AppTabId>('overview')
   const [hydrated, setHydrated] = useState(false)
   const archiveBestsRef = useRef<ArchiveBestMap | null>(null)
@@ -203,6 +204,7 @@ export default function App() {
 
   const { health, bridgeUp } = useLiveBridge({
     enabled: liveEnabled && settings.setupDone,
+    recording,
     onEvent: onLiveEvent,
   })
 
@@ -238,6 +240,8 @@ export default function App() {
           <LiveBadge
             enabled={liveEnabled}
             onToggle={() => setLiveEnabled((v) => !v)}
+            recording={recording}
+            onRecordingChange={setRecording}
             bridgeUp={bridgeUp}
             clientOnline={health.clientOnline}
             nickname={health.nickname || settings.nickname || null}
@@ -295,7 +299,13 @@ export default function App() {
             }}
           />
         )}
-        {activeTab === 'ai' && <AiRecommendPanel />}
+        {activeTab === 'ai' && (
+          <AiRecommendPanel
+            charts={sortedCharts}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
+        )}
       </div>
 
       <AddChartModal

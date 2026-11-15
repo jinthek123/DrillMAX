@@ -36,18 +36,77 @@ function dotFill(payload?: ProgressPoint): string {
   return 'var(--score-dot)'
 }
 
+function starPoints(
+  cx: number,
+  cy: number,
+  outer: number,
+  inner: number,
+): Array<[number, number]> {
+  const pts: Array<[number, number]> = []
+  for (let i = 0; i < 10; i++) {
+    const radius = i % 2 === 0 ? outer : inner
+    const angle = -Math.PI / 2 + (i * Math.PI) / 5
+    pts.push([cx + Math.cos(angle) * radius, cy + Math.sin(angle) * radius])
+  }
+  return pts
+}
+
+function roundedPolygon(points: Array<[number, number]>, radius: number) {
+  const n = points.length
+  const corner = points.map((curr, i) => {
+    const prev = points[(i - 1 + n) % n]
+    const next = points[(i + 1) % n]
+    const v1x = prev[0] - curr[0]
+    const v1y = prev[1] - curr[1]
+    const v2x = next[0] - curr[0]
+    const v2y = next[1] - curr[1]
+    const len1 = Math.hypot(v1x, v1y) || 1
+    const len2 = Math.hypot(v2x, v2y) || 1
+    const r = Math.min(radius, len1 / 2.2, len2 / 2.2)
+    return {
+      x: curr[0],
+      y: curr[1],
+      inX: curr[0] + (v1x / len1) * r,
+      inY: curr[1] + (v1y / len1) * r,
+      outX: curr[0] + (v2x / len2) * r,
+      outY: curr[1] + (v2y / len2) * r,
+    }
+  })
+  const f = (value: number) => value.toFixed(2)
+  const first = corner[0]
+  let d = `M${f(first.outX)} ${f(first.outY)}`
+  for (let i = 1; i < n; i++) {
+    const c = corner[i]
+    d += `L${f(c.inX)} ${f(c.inY)}Q${f(c.x)} ${f(c.y)} ${f(c.outX)} ${f(c.outY)}`
+  }
+  d += `L${f(first.inX)} ${f(first.inY)}Q${f(first.x)} ${f(first.y)} ${f(first.outX)} ${f(first.outY)}Z`
+  return d
+}
+
 function ChartDot({
   cx,
   cy,
   payload,
   active = false,
+  best = false,
 }: {
   cx?: number
   cy?: number
   payload?: ProgressPoint
   active?: boolean
+  best?: boolean
 }) {
   if (cx == null || cy == null || payload?.accuracy == null) return null
+  if (best) {
+    const outer = active ? 12 : 9.6
+    return (
+      <path
+        d={roundedPolygon(starPoints(cx, cy, outer, outer * 0.42), outer * 0.2)}
+        fill="var(--gold)"
+        stroke="none"
+      />
+    )
+  }
   const fill = dotFill(payload)
   const r = active ? 7 : 5.5
   return (
@@ -189,21 +248,29 @@ function ProgressChartInner({ plays, highest }: ProgressChartProps) {
             strokeWidth={2.25}
             connectNulls
             zIndex={DefaultZIndexes.line}
-            dot={(props) => (
-              <ChartDot
-                cx={props.cx}
-                cy={props.cy}
-                payload={props.payload as ProgressPoint}
-              />
-            )}
-            activeDot={(props) => (
-              <ChartDot
-                cx={props.cx}
-                cy={props.cy}
-                payload={props.payload as ProgressPoint}
-                active
-              />
-            )}
+            dot={(props) => {
+              const point = props.payload as ProgressPoint
+              return (
+                <ChartDot
+                  cx={props.cx}
+                  cy={props.cy}
+                  payload={point}
+                  best={point?.hrUpdate === true}
+                />
+              )
+            }}
+            activeDot={(props) => {
+              const point = props.payload as ProgressPoint
+              return (
+                <ChartDot
+                  cx={props.cx}
+                  cy={props.cy}
+                  payload={point}
+                  best={point?.hrUpdate === true}
+                  active
+                />
+              )
+            }}
             isAnimationActive={false}
           />
           {highest != null && <HighestReferenceLine highest={highest} />}

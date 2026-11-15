@@ -1,9 +1,11 @@
+import { Hang2botName } from './Hang2botName'
+
 export type AppTabId = 'overview' | 'chart' | 'ai'
 
 const TABS: { id: AppTabId; label: string }[] = [
   { id: 'overview', label: '전체 성과' },
   { id: 'chart', label: '단일 곡 기록' },
-  { id: 'ai', label: 'AI 추천' },
+  { id: 'ai', label: '행이봇 x DrillMAX' },
 ]
 
 interface AppTabsProps {
@@ -21,7 +23,14 @@ export function AppTabs({ active, onChange }: AppTabsProps) {
           className={`app-tab${active === tab.id ? ' active' : ''}`}
           onClick={() => onChange(tab.id)}
         >
-          {tab.label}
+          {tab.id === 'ai' ? (
+            <>
+              <Hang2botName />
+              {' x DrillMAX'}
+            </>
+          ) : (
+            tab.label
+          )}
         </button>
       ))}
     </nav>

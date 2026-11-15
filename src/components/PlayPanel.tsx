@@ -4,6 +4,7 @@ import { isPerfectPlay } from '../types'
 import { formatChartLabel, formatDateTime } from '../lib/parseLog'
 import { PLAY_KEEP_PER_CHART } from '../lib/dailyBest'
 import { ProgressChart } from './ProgressChart'
+import { TrashIcon } from './TrashIcon'
 
 interface PlayPanelProps {
   chart: Chart | null
@@ -210,10 +211,12 @@ export function PlayPanel({
                 {mc && <span className="badge mc">MC</span>}
                 <button
                   type="button"
-                  className="link-danger"
+                  className="icon-delete"
+                  aria-label="삭제"
+                  title="이 기록 삭제"
                   onClick={() => onDeletePlay(p.id)}
                 >
-                  삭제
+                  <TrashIcon />
                 </button>
               </li>
               )

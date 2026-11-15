@@ -10,7 +10,7 @@ import {
 import { compareChartOrder } from '../lib/chartIdentity'
 import { DailyBestCard } from './DailyBestCard'
 
-type SortKey = 'manual' | 'title' | 'best' | 'plays' | 'latest' | 'pending'
+type SortKey = 'manual' | 'title' | 'oldest' | 'plays' | 'latest' | 'pending'
 
 interface OverviewPanelProps {
   data: AppData
@@ -64,24 +64,25 @@ function sortRows(rows: ChartOverviewRow[], key: SortKey): ChartOverviewRow[] {
   const copy = rows.slice()
   copy.sort((a, b) => {
     switch (key) {
-      case 'best':
-        return (b.highest ?? -1) - (a.highest ?? -1)
       case 'plays':
         return b.playCount - a.playCount
       case 'pending':
         return b.pendingCount - a.pendingCount
-      case 'latest': {
-        const at = a.latest ? new Date(a.latest.playedAt).getTime() : 0
-        const bt = b.latest ? new Date(b.latest.playedAt).getTime() : 0
-        return bt - at
-      }
+      case 'latest':
+        return (b.latestAt ?? 0) - (a.latestAt ?? 0)
+      case 'oldest':
+        return (
+          (a.latestAt ?? Number.POSITIVE_INFINITY) -
+          (b.latestAt ?? Number.POSITIVE_INFINITY)
+        )
       case 'manual':
         return compareChartOrder(a.chart, b.chart)
       case 'title':
       default:
-        return `${a.chart.button}${a.chart.difficulty}${a.chart.title}`.localeCompare(
-          `${b.chart.button}${b.chart.difficulty}${b.chart.title}`,
-          'ko',
+        return (
+          a.chart.button.localeCompare(b.chart.button) ||
+          a.chart.difficulty.localeCompare(b.chart.difficulty) ||
+          a.chart.title.localeCompare(b.chart.title, 'ko')
         )
     }
   })
@@ -124,15 +125,7 @@ export function OverviewPanel({
     })
   }, [allRows, button, query])
 
-  const filteredChartIds = useMemo(
-    () => new Set(filtered.map((r) => r.chart.id)),
-    [filtered],
-  )
-
-  const summary = useMemo(
-    () => summarizeOverview(filtered, data.plays, filteredChartIds),
-    [filtered, data.plays, filteredChartIds],
-  )
+  const summary = useMemo(() => summarizeOverview(filtered), [filtered])
   const rows = useMemo(() => sortRows(filtered, sortKey), [filtered, sortKey])
 
   useLayoutEffect(() => {
@@ -292,7 +285,7 @@ export function OverviewPanel({
           >
             <option value="manual">내 순서</option>
             <option value="latest">최근 플레이</option>
-            <option value="best">Best 높은 순</option>
+            <option value="oldest">가장 오래된 플레이</option>
             <option value="plays">플레이 많은 순</option>
             <option value="pending">미갱신 많은 순</option>
             <option value="title">이름</option>
@@ -322,11 +315,13 @@ export function OverviewPanel({
               lifted={drag?.id === r.chart.id}
               sliding={drag != null && drag.id !== r.chart.id}
               shiftY={cardShift(index, drag)}
-              onGripPointerDown={(event) => beginDrag(event, r.chart.id)}
+              onOpen={() => onOpenChart(r.chart.id)}
+              onGripPointerDown={(event: ReactPointerEvent<HTMLButtonElement>) =>
+                beginDrag(event, r.chart.id)
+              }
               onGripPointerMove={moveDrag}
               onGripPointerUp={() => endDrag(true)}
               onGripPointerCancel={() => endDrag(false)}
-              onOpen={() => onOpenChart(r.chart.id)}
             />
           ))
         )}

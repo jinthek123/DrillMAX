@@ -10,6 +10,7 @@ interface BridgeHealth {
 
 interface UseLiveBridgeOptions {
   enabled: boolean
+  recording: boolean
   onEvent: (ev: LiveBridgeEvent) => string
 }
 
@@ -24,7 +25,11 @@ interface SnapshotPlay {
   raw: string
 }
 
-export function useLiveBridge({ enabled, onEvent }: UseLiveBridgeOptions) {
+export function useLiveBridge({
+  enabled,
+  recording,
+  onEvent,
+}: UseLiveBridgeOptions) {
   const [health, setHealth] = useState<BridgeHealth>({
     clientOnline: false,
     nickname: null,
@@ -34,6 +39,8 @@ export function useLiveBridge({ enabled, onEvent }: UseLiveBridgeOptions) {
   const sinceRef = useRef<string>(new Date().toISOString())
   const seenRef = useRef<Set<string>>(new Set())
   const syncedSnapshotRef = useRef(false)
+  const recordingRef = useRef(recording)
+  recordingRef.current = recording
 
   useEffect(() => {
     if (!enabled) return
@@ -44,11 +51,13 @@ export function useLiveBridge({ enabled, onEvent }: UseLiveBridgeOptions) {
     function ingest(ev: LiveBridgeEvent) {
       if (seenRef.current.has(ev.id)) {
         // MaxCombo 배너가 늦게 잡힌 경우 업그레이드만 재시도
-        if (ev.maxCombo) onEvent(ev)
+        if (ev.maxCombo && recordingRef.current) onEvent(ev)
         return
       }
       seenRef.current.add(ev.id)
       sinceRef.current = ev.at > sinceRef.current ? ev.at : sinceRef.current
+      // 일시정지 중 판은 커서를 넘겨 두고 저장하지 않는다.
+      if (!recordingRef.current) return
       // [미갱신] 시 PB 조회는 App.onLiveEvent → refreshArchiveBest
       onEvent(ev)
     }
@@ -62,10 +71,11 @@ export function useLiveBridge({ enabled, onEvent }: UseLiveBridgeOptions) {
         plays: SnapshotPlay[]
       }
       syncedSnapshotRef.current = true
+      const at = new Date().toISOString()
       for (const p of [...json.plays].reverse()) {
         ingest({
           id: `snap-${p.time}-${p.status}-${p.button}-${p.difficulty}-${p.title}-${p.accuracy}`,
-          at: new Date().toISOString(),
+          at,
           time: p.time,
           status: p.status,
           button: p.button,
@@ -78,7 +88,10 @@ export function useLiveBridge({ enabled, onEvent }: UseLiveBridgeOptions) {
       }
     }
 
+    let polling = false
     async function poll() {
+      if (polling || cancelled) return
+      polling = true
       try {
         const res = await fetch(
           bridgeUrl(
@@ -126,6 +139,8 @@ export function useLiveBridge({ enabled, onEvent }: UseLiveBridgeOptions) {
                 },
           )
         }
+      } finally {
+        polling = false
       }
     }
 

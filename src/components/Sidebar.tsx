@@ -1,11 +1,13 @@
 import { ask } from '@tauri-apps/plugin-dialog'
 import { useState, type ReactNode } from 'react'
 import { isTauri } from '../lib/bridgeUrl'
-import { difficultyTone } from '../lib/difficultyTone'
 import type { ThemeMode } from '../lib/settings'
 import { findSongExact, type SongIndex } from '../lib/songCatalog'
 import type { Chart } from '../types'
+import { ChartBadges } from './ChartBadges'
 import { ThemeToggle } from './ThemeToggle'
+import { UpdateCheckButton } from './UpdateCheckButton'
+import { TrashIcon } from './TrashIcon'
 
 interface SidebarProps {
   charts: Chart[]
@@ -54,13 +56,16 @@ export function Sidebar({
         + 차트 추가
       </button>
       {onOpenApiSettings && (
-        <button
-          type="button"
-          className="btn-ghost sidebar-add"
-          onClick={onOpenApiSettings}
-        >
-          API 키 설정
-        </button>
+        <div className="sidebar-actions">
+          <button
+            type="button"
+            className="btn-ghost sidebar-add"
+            onClick={onOpenApiSettings}
+          >
+            API 키 설정
+          </button>
+          <UpdateCheckButton />
+        </div>
       )}
 
       <ul className="chart-list">
@@ -77,22 +82,15 @@ export function Sidebar({
                   className="chart-item-main"
                   onClick={() => onSelect(c.id)}
                 >
-                  <span className="chart-badges">
-                    <span className="chart-badge" data-button={c.button}>
-                      {c.button}
-                    </span>
-                    <span
-                      className="chart-badge"
-                      data-tone={difficultyTone(
-                        c.difficulty,
-                        findSongExact(songIndex, c.title)?.patterns[c.button]?.[
-                          c.difficulty
-                        ]?.level,
-                      )}
-                    >
-                      {c.difficulty}
-                    </span>
-                  </span>
+                  <ChartBadges
+                    button={c.button}
+                    difficulty={c.difficulty}
+                    level={
+                      findSongExact(songIndex, c.title)?.patterns[c.button]?.[
+                        c.difficulty
+                      ]?.level
+                    }
+                  />
                   <span className="chart-item-label">{c.title}</span>
                   <span className="chart-item-meta">
                     {playCounts[c.id] ?? 0}회
@@ -101,7 +99,7 @@ export function Sidebar({
               {active && (
                 <button
                   type="button"
-                  className="chart-delete"
+                  className="icon-delete chart-delete"
                   aria-label="삭제"
                   title="차트 삭제"
                   disabled={confirmingId != null}
@@ -125,23 +123,7 @@ export function Sidebar({
                       .finally(() => setConfirmingId(null))
                   }}
                 >
-                  <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-                    <path
-                      d="M9 4.5h6M5.5 7.5h13M8.2 7.5l.7 11.2h6.2l.7-11.2"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M10.2 11v5M13.8 11v5"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.7"
-                      strokeLinecap="round"
-                    />
-                  </svg>
+                  <TrashIcon />
                 </button>
               )}
               </div>

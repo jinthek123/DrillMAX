@@ -18,6 +18,8 @@ export interface ProgressPoint {
   dayBreak: boolean
   maxCombo?: boolean
   perfectPlay?: boolean
+  /** 미갱신이 아닌 기록 중, 직전 최고를 넘긴 최종 BEST */
+  hrUpdate?: boolean
 }
 
 function maxTimeLabels(playCount: number): number {
@@ -78,6 +80,8 @@ export function buildProgressPoints(plays: Play[]): ProgressPoint[] {
   const timeFmt = dense ? formatTimeAxisShort : formatTimeAxis
   const rows: ProgressPoint[] = []
   let prevDay: string | null = null
+  let hrBest: number | null = null
+  let hrBestRow: number | null = null
 
   plays.forEach((p, i) => {
     const day = localDayKey(p.playedAt)
@@ -107,8 +111,14 @@ export function buildProgressPoints(plays: Play[]): ProgressPoint[] {
       maxCombo: p.maxCombo,
       perfectPlay: isPerfectPlay(p.accuracy, p.maxCombo),
     })
+    if (p.status !== '미갱신' && (hrBest == null || p.accuracy > hrBest)) {
+      hrBest = p.accuracy
+      hrBestRow = rows.length - 1
+    }
     prevDay = day
   })
+
+  if (hrBestRow != null) rows[hrBestRow].hrUpdate = true
 
   return withVisibleLabels(rows, maxTimeLabels(plays.length))
 }

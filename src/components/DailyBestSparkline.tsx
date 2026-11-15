@@ -131,7 +131,7 @@ function DailyBestSparklineInner({
             dataKey="accuracy"
             stroke="var(--score-line)"
             strokeWidth={2.25}
-            connectNulls={false}
+            connectNulls
             dot={(props) => (
               <SparkDot
                 cx={props.cx}

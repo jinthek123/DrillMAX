@@ -1,0 +1,6 @@
+"$schema" = "schemas/schema.json"
+
+[[permission]]
+identifier = "allow-install-app-update"
+description = "Enables the install_app_update command without any pre-configured scope."
+commands.allow = ["install_app_update"]

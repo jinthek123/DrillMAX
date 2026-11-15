@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 
 /* Light — DJMAX lavender / gold */
 :root,
@@ -33,8 +33,9 @@
   --sidebar-bg: rgba(255, 255, 255, 0.78);
   --chart-bg: rgba(255, 255, 255, 0.88);
   --glow: rgba(230, 168, 0, 0.18);
+  color-scheme: light;
   --font: 'Outfit', 'Pretendard', sans-serif;
-  --font-display: 'Space Grotesk', 'Outfit', sans-serif;
+  --font-display: var(--font);
   --font-mono: 'Outfit', sans-serif;
   --radius: 14px;
 
@@ -95,6 +96,7 @@
   --sidebar-bg: rgba(18, 8, 32, 0.86);
   --chart-bg: rgba(26, 11, 46, 0.9);
   --glow: rgba(255, 45, 149, 0.16);
+  color-scheme: dark;
 }
 
 :root {
@@ -110,6 +112,37 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--axis) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--axis) 80%, transparent);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 html,
