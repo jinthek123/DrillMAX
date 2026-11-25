@@ -374,7 +374,9 @@ data/drillMax.json
 
 ### Example JSON
 
-아래는 데이터 구조를 설명하기 위한 축약 예시이며 실제 플레이 기록은 아닙니다.
+아래 블록을 그대로 복사해 `drillMax.json`으로 저장할 수 있습니다. 곡 이름과 점수는 형식을 보여 주는 가짜 값입니다.
+
+없는 상수는 칸을 만들지 않습니다. 로컬 최고와 일일 최고도 넣지 않습니다. 앱이 저장하면 같은 모양으로 다시 씁니다.
 
 ```json
 {
@@ -382,7 +384,7 @@ data/drillMax.json
   "updatedAt": "2026-11-25T00:00:00.000Z",
   "nickname": "player",
   "suppressedKeys": [
-    "4B|SC|Example|99.5|12:00:00"
+    "4B|SC|Example|99.50|12:00:00"
   ],
   "charts": [
     {
@@ -394,9 +396,20 @@ data/drillMax.json
       "button": "4B",
       "difficulty": "SC",
       "level": 10,
+      "floor": 10,
       "floorName": "10.5",
       "order": 0,
       "archiveBest": 99.5,
+      "createdAt": "2026-11-25T00:00:00.000Z"
+    },
+    {
+      "id": "rf:8B|HD|Sample",
+      "titleId": null,
+      "title": "Sample",
+      "button": "8B",
+      "difficulty": "HD",
+      "level": 8,
+      "order": 1,
       "createdAt": "2026-11-25T00:00:00.000Z"
     }
   ],
@@ -404,10 +417,27 @@ data/drillMax.json
     {
       "id": "play-1",
       "chartId": "rf:4B|SC|Example",
-      "at": "2026-11-25T00:00:00.000Z",
+      "at": "2026-11-25T03:00:00.000Z",
       "score": 99.1,
       "status": "미갱신",
       "source": "live"
+    },
+    {
+      "id": "play-2",
+      "chartId": "rf:4B|SC|Example",
+      "at": "2026-11-25T03:10:00.000Z",
+      "score": 100,
+      "maxCombo": true,
+      "status": "성공",
+      "source": "log"
+    },
+    {
+      "id": "play-3",
+      "chartId": "rf:8B|HD|Sample",
+      "at": "2026-11-25T03:20:00.000Z",
+      "score": 98.5,
+      "status": "성공",
+      "source": "manual"
     }
   ]
 }
