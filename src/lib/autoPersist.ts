@@ -8,17 +8,12 @@ import {
 import type { AppData } from '../types'
 import type { SongEntry } from './songCatalog'
 import { isTauri } from './bridgeUrl'
+import { joinPath } from './pathJoin'
 import { readAppDataJson, writeAppDataJson } from './persist'
 
 const FILE_NAME = 'drillMax.json'
 
 declare const __DRILLMAX_DATA_FILE__: string
-
-function joinPath(dir: string, file: string): string {
-  const trimmed = dir.replace(/[/\\]+$/, '')
-  const sep = trimmed.includes('\\') ? '\\' : '/'
-  return `${trimmed}${sep}${file}`
-}
 
 function toWindowsPath(filePath: string): string {
   const trimmed = filePath.trim()

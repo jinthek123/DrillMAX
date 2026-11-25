@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react'
 import type { ElixirRecommendation, TagChip } from '../../lib/elixirRecommend'
+import { hangJacket } from '../../lib/hangCatalog'
 import type { Chart } from '../../types'
 import { Hang2botName } from '../Hang2botName'
-import { SeedFaceMeta, TagList } from './RecommendColumns'
+import { SeedFaceMeta, SongTitle, TagList } from './RecommendColumns'
 
 const SWIPE_THRESHOLD = 48
 
@@ -24,12 +25,17 @@ function circularDelta(itemIndex: number, index: number, length: number) {
   return delta
 }
 
+function jacketFor(chart: Chart): string | undefined {
+  return hangJacket(chart.button, chart.difficulty, chart.title)
+}
+
 function SeedCard({
   chart,
   place,
   tags,
   floorName,
   level,
+  titleJacket,
   onChoose,
 }: {
   chart: Chart
@@ -37,6 +43,7 @@ function SeedCard({
   tags: TagChip[]
   floorName: string
   level?: number
+  titleJacket?: string
   onChoose?: () => void
 }) {
   const body = (
@@ -47,7 +54,7 @@ function SeedCard({
             <Hang2botName /> x DrillMAX
           </p>
         )}
-        <h1>{chart.title}</h1>
+        <SongTitle as="h1" title={chart.title} titleJacket={titleJacket} />
         {place === 'center' && (
           <SeedFaceMeta
             button={chart.button}
@@ -149,6 +156,7 @@ export function SeedCarousel({
               tags={active?.tags ?? []}
               floorName={active?.floorName ?? ''}
               level={active?.level}
+              titleJacket={active?.titleJacket ?? jacketFor(item)}
               onChoose={
                 place === 'left' || place === 'right'
                   ? () => {

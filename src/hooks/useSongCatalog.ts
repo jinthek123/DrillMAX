@@ -4,6 +4,7 @@ import {
   fetchSongCatalog,
   isCacheFresh,
   loadCachedSongs,
+  rewriteSlimSongCache,
   type SongEntry,
   type SongIndex,
 } from '../lib/songCatalog'
@@ -22,6 +23,7 @@ export function useSongCatalog() {
 
   useEffect(() => {
     let cancelled = false
+    rewriteSlimSongCache()
     const cached = loadCachedSongs()
 
     async function load() {

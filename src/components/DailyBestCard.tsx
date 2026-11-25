@@ -1,8 +1,12 @@
-import { useLayoutEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react'
+import { useLayoutEffect, useMemo, useRef, type PointerEvent as ReactPointerEvent } from 'react'
 import type { Chart, DailyBest, Play } from '../types'
 import { isPerfectPlay } from '../types'
+import { jacketSrcForId } from '../lib/jacketSrc'
 import { formatDateTime } from '../lib/parseLog'
-import { DailyBestSparkline } from './DailyBestSparkline'
+import { ChartBadges } from './ChartBadges'
+import { DailyBestSparkline, dailySparkAxisWidth } from './DailyBestSparkline'
+import { EMPTY_FLOOR, FloorMark } from './FloorMark'
+import { OrderHandle } from './OrderHandle'
 
 const TITLE_FONT_MIN_PX = 11
 
@@ -37,7 +41,7 @@ function nameOverflows(head: HTMLElement, name: HTMLElement) {
 }
 
 function useShrinkTitle(label: string) {
-  const headRef = useRef<HTMLDivElement>(null)
+  const headRef = useRef<HTMLElement>(null)
   const nameRef = useRef<HTMLSpanElement>(null)
 
   useLayoutEffect(() => {
@@ -77,6 +81,7 @@ function useShrinkTitle(label: string) {
 
 interface DailyBestCardProps {
   chart: Chart
+  floorName?: string | null
   latest: Play | null
   highest: number | null
   dailyBests: DailyBest[] | undefined
@@ -84,6 +89,7 @@ interface DailyBestCardProps {
   lifted?: boolean
   sliding?: boolean
   shiftY?: number
+  selected?: boolean
   onGripPointerDown?: (event: ReactPointerEvent<HTMLButtonElement>) => void
   onGripPointerMove?: (event: ReactPointerEvent<HTMLButtonElement>) => void
   onGripPointerUp?: (event: ReactPointerEvent<HTMLButtonElement>) => void
@@ -92,6 +98,7 @@ interface DailyBestCardProps {
 
 export function DailyBestCard({
   chart,
+  floorName,
   latest,
   highest,
   dailyBests,
@@ -99,6 +106,7 @@ export function DailyBestCard({
   lifted = false,
   sliding = false,
   shiftY = 0,
+  selected = false,
   onGripPointerDown,
   onGripPointerMove,
   onGripPointerUp,
@@ -106,75 +114,72 @@ export function DailyBestCard({
 }: DailyBestCardProps) {
   const pp = latest != null && isPerfectPlay(latest.accuracy, latest.maxCombo)
   const mc = latest != null && !pp && !!latest.maxCombo
+  const jacket = jacketSrcForId(chart.titleId)
   const { headRef, nameRef } = useShrinkTitle(chart.title)
+  const axisWidth = useMemo(
+    () => dailySparkAxisWidth(chart.id, dailyBests, highest),
+    [dailyBests, chart.id, highest],
+  )
 
   return (
     <article
-      className={`daily-best-card${lifted ? ' is-lifted' : ''}${sliding ? ' is-shifting' : ''}`}
+      className={`daily-best-card${selected ? ' is-selected' : ''}${lifted ? ' is-lifted' : ''}${sliding ? ' is-shifting' : ''}`}
       data-chart-id={chart.id}
       style={lifted || sliding ? { transform: `translateY(${shiftY}px)` } : undefined}
     >
-      {onGripPointerDown && (
-      <button
-        type="button"
-        className="order-handle"
-        aria-label="순서 변경"
-        title="끌어서 순서 변경"
-        onClick={(event) => event.preventDefault()}
-        onPointerDown={onGripPointerDown}
-        onPointerMove={onGripPointerMove}
-        onPointerUp={onGripPointerUp}
-        onPointerCancel={onGripPointerCancel}
-      >
-        <svg className="order-grip" viewBox="0 0 14 18" aria-hidden>
-          {[0, 1, 2].flatMap((row) =>
-            [0, 1].map((col) => (
-              <circle
-                key={`${row}-${col}`}
-                cx={3 + col * 6}
-                cy={3 + row * 6}
-                r="1.45"
-                fill="currentColor"
-              />
-            )),
-          )}
-        </svg>
-      </button>
+      {onGripPointerDown && onGripPointerMove && onGripPointerUp && onGripPointerCancel && (
+        <OrderHandle
+          onPointerDown={onGripPointerDown}
+          onPointerMove={onGripPointerMove}
+          onPointerUp={onGripPointerUp}
+          onPointerCancel={onGripPointerCancel}
+        />
       )}
       <button type="button" className="daily-best-card-body" onClick={onOpen}>
-      <div className="daily-best-card-head" ref={headRef}>
-        <span className="daily-best-card-title">
-          <span className={`button-tint-${chart.button}`}>
-            {chart.button} {chart.difficulty}
+      <div
+        className="daily-best-card-head"
+        style={{ ['--axis-width' as string]: `${axisWidth}px` }}
+      >
+        <span className="daily-best-card-jacket">
+          {jacket ? <img className="song-jacket" src={jacket} alt="" /> : null}
+        </span>
+        <span className="daily-best-card-info" ref={headRef}>
+          <span className="daily-best-card-title">
+            <span className="daily-best-card-name" ref={nameRef}>
+              {chart.title}
+            </span>
+            <ChartBadges
+              button={chart.button}
+              difficulty={chart.difficulty}
+              level={chart.level}
+            />
+            <FloorMark floorName={floorName || EMPTY_FLOOR} />
           </span>
-          <span className="daily-best-card-sep">—</span>
-          <span className="daily-best-card-name" ref={nameRef}>
-            {chart.title}
+          <span className="daily-best-card-meta mono">
+            {latest ? formatDateTime(latest.playedAt) : '—'}
           </span>
-        </span>
-        <span className="daily-best-card-meta mono">
-          {latest ? formatDateTime(latest.playedAt) : '—'}
-        </span>
-        <span
-          className={`daily-best-card-score mono${pp ? ' pp' : mc ? ' mc' : ''}`}
-        >
-          {latest != null ? `${latest.accuracy.toFixed(2)}%` : '—'}
-        </span>
-        <span className="daily-best-card-badges">
-          {latest?.source === 'live' && (
-            <span className="badge soft">LIVE</span>
-          )}
-          {latest?.status === '미갱신' && (
-            <span className="badge soft">미갱신</span>
-          )}
-          {pp && <span className="badge pp">PP</span>}
-          {mc && <span className="badge mc">MC</span>}
+          <span
+            className={`daily-best-card-score mono${pp ? ' pp' : mc ? ' mc' : ''}`}
+          >
+            {latest != null ? `${latest.accuracy.toFixed(2)}%` : '—'}
+          </span>
+          <span className="daily-best-card-badges">
+            {latest?.source === 'live' && (
+              <span className="badge soft">LIVE</span>
+            )}
+            {latest?.status === '미갱신' && (
+              <span className="badge soft">미갱신</span>
+            )}
+            {pp && <span className="badge pp">PP</span>}
+            {mc && <span className="badge mc">MC</span>}
+          </span>
         </span>
       </div>
       <DailyBestSparkline
         chartId={chart.id}
         dailyBests={dailyBests}
         highest={highest}
+        axisWidth={axisWidth}
       />
       </button>
     </article>

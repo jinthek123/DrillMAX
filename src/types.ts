@@ -7,8 +7,18 @@ export interface Chart {
   button: ButtonMode
   difficulty: Difficulty
   createdAt: string
+  /** songs.json title 번호. 자켓 파일명과 같다. */
+  titleId?: number
+  composer?: string
+  dlcCode?: string
   /** 직접 정렬 순서. 작을수록 위 */
   order?: number
+  /** 게임 표기 레벨. 상수(floor)와 다를 수 있다. */
+  level?: number
+  /** 패턴 상수. 161이면 16.1층 */
+  floor?: number
+  /** 화면에 보이는 층 수 */
+  floorName?: string
   /** V-ARCHIVE에 저장된 최고기록 (미갱신 시 기준선용) */
   archiveBest?: number
 }

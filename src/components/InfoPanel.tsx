@@ -93,7 +93,7 @@ export function InfoPanel() {
             적은 글자가 들어간 곡만 남깁니다.
           </Shot>
           <Shot image={sortSelect} title="정렬">
-            내 순서, 최근 플레이, 가장 오래된 플레이, 플레이 많은 순, 미갱신 많은 순, 이름 중에서 고릅니다. 카드 왼쪽 손잡이를 끌면 내 순서로 저장됩니다.
+            사용자 지정 순서, 대시보드 순서, 최근 플레이, 가장 오래된 플레이, 플레이 많은 순, 미갱신 많은 순, 기록 갱신 폭 높은 순, 기록 갱신 폭 낮은 순, 이름 중에서 고릅니다. 갱신 폭은 마지막으로 기록을 넘긴 점수 차이입니다. 카드나 왼쪽 목록의 손잡이를 끌면 사용자 지정 순서로 저장됩니다. 목록 끝에서 계속 끌면 그 방향으로 더 스크롤됩니다.
           </Shot>
           <Shot image={importLog} title="로그 가져오기">
             V-ARCHIVE 로그를 붙여 넣어 기록을 추가합니다.
@@ -104,7 +104,7 @@ export function InfoPanel() {
         </Group>
         <Group title="단일 곡 기록">
           <Shot image={tabChart} title="단일 곡 기록">
-            왼쪽 목록이나 전체 성과 카드에서 고른 곡의 기록과 그래프를 보는 탭입니다. 위 HR은 최고 정확도이고, Current는 가장 최근 플레이입니다.
+            전체 성과 카드에서 고른 곡의 기록과 그래프를 보는 탭입니다. 왼쪽 목록은 지금 탭을 유지한 채 그 곡으로 옮깁니다. 위 HR은 최고 정확도이고, Current는 가장 최근 플레이입니다.
           </Shot>
         </Group>
         <Group
@@ -115,7 +115,7 @@ export function InfoPanel() {
           }
         >
           <Shot image={tabHang} title="행이봇 x DrillMAX">
-            곡을 좌우로 넘기며 가운데 곡을 기준으로 추천곡과 쉬는곡을 보는 탭입니다. 계단 옆 숫자는 상수이고, 괄호는 가운데 곡과의 차이입니다.
+            곡을 좌우로 넘기며 가운데 곡을 기준으로 추천곡과 쉬는곡을 보는 탭입니다. 왼쪽 목록에서 고르면 그 곡이 가운데로 옵니다. 계단 옆 숫자는 상수이고, 괄호는 가운데 곡과의 차이입니다.
           </Shot>
           <Shot image={reroll} title="다시 뽑기">
             추천곡과 쉬는곡 제목 오른쪽에 있습니다. 그 목록만 다시 뽑습니다. 곡을 바꾸면 처음 목록으로 돌아갑니다.
@@ -125,6 +125,10 @@ export function InfoPanel() {
           </Shot>
         </Group>
       </div>
+      <footer className="info-legal">
+        <p>DJMAX RESPECT V 및 관련 상표·저작물의 권리는 (주)네오위즈에 있습니다.</p>
+        <p>V-ARCHIVE, 행이봇 관련 명칭과 에셋의 권리는 각 권리자의 권한 설정을 따릅니다.</p>
+      </footer>
     </main>
   )
 }

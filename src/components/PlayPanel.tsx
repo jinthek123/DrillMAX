@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { Chart, Play } from '../types'
 import { isPerfectPlay } from '../types'
+import { jacketSrcForId } from '../lib/jacketSrc'
 import { formatChartLabel, formatDateTime } from '../lib/parseLog'
-import { PLAY_KEEP_PER_CHART } from '../lib/dailyBest'
+import { ChartBadges } from './ChartBadges'
+import { EMPTY_FLOOR, FloorMark } from './FloorMark'
 import { ProgressChart } from './ProgressChart'
 import { TrashIcon } from './TrashIcon'
 
@@ -20,6 +22,40 @@ interface PlayPanelProps {
   onOpenImport: () => void
   onExport: () => void
   onImportJson: (file: File) => void
+  level?: number
+  floorName?: string
+}
+
+const TITLE_FONT_MIN_PX = 20
+
+function useFitSongTitle(label: string) {
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  const nameRef = useRef<HTMLSpanElement>(null)
+
+  useLayoutEffect(() => {
+    const title = titleRef.current
+    const name = nameRef.current
+    if (!title || !name) return
+
+    const fit = () => {
+      name.style.fontSize = ''
+      const base = Number.parseFloat(getComputedStyle(title).fontSize)
+      if (!Number.isFinite(base)) return
+      const jacket = title.querySelector<HTMLElement>('.song-jacket')
+      const gap = Number.parseFloat(getComputedStyle(title).columnGap) || 0
+      const available = title.clientWidth - (jacket?.offsetWidth ?? 0) - (jacket ? gap : 0)
+      if (available <= 0 || name.scrollWidth <= available + 1) return
+      const size = Math.max(TITLE_FONT_MIN_PX, Math.floor((base * available) / name.scrollWidth))
+      name.style.fontSize = `${size}px`
+    }
+
+    fit()
+    const observer = new ResizeObserver(fit)
+    observer.observe(title)
+    return () => observer.disconnect()
+  }, [label])
+
+  return { titleRef, nameRef }
 }
 
 function nowLocalInput(): string {
@@ -38,10 +74,13 @@ export function PlayPanel({
   onOpenImport,
   onExport,
   onImportJson,
+  level,
+  floorName,
 }: PlayPanelProps) {
   const [accuracy, setAccuracy] = useState('')
   const [playedAt, setPlayedAt] = useState(nowLocalInput)
   const [maxCombo, setMaxCombo] = useState(false)
+  const { titleRef, nameRef } = useFitSongTitle(chart?.title ?? '')
 
   if (!chart) {
     return (
@@ -65,17 +104,24 @@ export function PlayPanel({
     )
   }
 
+  const jacket = jacketSrcForId(chart.titleId)
+
   return (
     <main className="main">
-      <header className="main-head">
+      <header className="main-head play-head">
         <div>
-          <p className={`eyebrow button-tint-${chart.button}`}>
-            {chart.button} {chart.difficulty}
-          </p>
-          <h1>{chart.title}</h1>
-          <p className="main-meta">
-            {plays.length}회 기록 · 최근 최대 {PLAY_KEEP_PER_CHART}회
-          </p>
+          <div className="main-badges">
+            <ChartBadges
+              button={chart.button}
+              difficulty={chart.difficulty}
+              level={level}
+            />
+            <FloorMark floorName={floorName || EMPTY_FLOOR} />
+          </div>
+          <h1 className="song-title" ref={titleRef}>
+            {jacket ? <img className="song-jacket" src={jacket} alt="" /> : null}
+            <span ref={nameRef}>{chart.title}</span>
+          </h1>
           <div className="scoreboard">
             <div className="score-card record">
               <span className="score-label">HR</span>

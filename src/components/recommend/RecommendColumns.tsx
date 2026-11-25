@@ -1,22 +1,25 @@
-import { floorGapParen, type RecommendPick, type TagChip } from '../../lib/elixirRecommend'
+import type { RecommendPick, TagChip } from '../../lib/elixirRecommend'
+import { jacketSrc } from '../../lib/jacketSrc'
 import { ChartBadges } from '../ChartBadges'
+import { FloorMark } from '../FloorMark'
 import { Hang2botName } from '../Hang2botName'
 
-function StairIcon() {
+export function SongTitle({
+  title,
+  titleJacket,
+  as,
+}: {
+  title: string
+  titleJacket?: string
+  as: 'h1' | 'strong'
+}) {
+  const src = jacketSrc(titleJacket)
+  const Tag = as
   return (
-    <svg className="stair-icon" viewBox="0 0 16 16" aria-hidden="true">
-      <path d="M2 16V12H6V8H10V4H14V16H2Z" fill="currentColor" />
-    </svg>
-  )
-}
-
-function FloorMark({ floorName, delta }: { floorName: string; delta?: number }) {
-  return (
-    <span className="floor-mark">
-      <StairIcon />
-      <span className="mono">{floorName}</span>
-      {delta != null && <span className="floor-gap">{floorGapParen(delta)}</span>}
-    </span>
+    <Tag className="song-title">
+      {src ? <img className="song-jacket" src={src} alt="" /> : null}
+      <span>{title}</span>
+    </Tag>
   )
 }
 
@@ -101,7 +104,7 @@ function RecommendColumn({
             <div className="recommend-card-head">
               <span className="recommend-rank">{index + 1}</span>
               <div>
-                <strong>{pick.title}</strong>
+                <SongTitle as="strong" title={pick.title} titleJacket={pick.titleJacket} />
                 <p className="main-meta recommend-mode-line">
                   <ChartBadges
                     button={button}

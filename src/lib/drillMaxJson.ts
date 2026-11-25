@@ -62,6 +62,42 @@ export interface DrillMaxFile {
   songs: DrillMaxSong[]
 }
 
+/** 사용자 기록. 차트는 기준 정보 스냅샷, 플레이는 사건 로그. */
+export interface RecordChart {
+  id: string
+  titleId: number | null
+  title: string
+  composer?: string
+  dlcCode?: string
+  button: ButtonMode
+  difficulty: Difficulty
+  level?: number
+  floor?: number
+  floorName?: string
+  order?: number
+  archiveBest?: number
+  createdAt: string
+}
+
+export interface RecordPlay {
+  id: string
+  chartId: string
+  at: string
+  score: number
+  maxCombo?: boolean
+  status?: '미갱신' | '성공'
+  source?: Play['source']
+}
+
+export interface RecordFile {
+  version: 2
+  updatedAt: string
+  nickname?: string
+  suppressedKeys?: string[]
+  charts: RecordChart[]
+  plays: RecordPlay[]
+}
+
 const BUTTONS: ButtonMode[] = ['4B', '5B', '6B', '8B']
 const DIFFS: Difficulty[] = ['NM', 'HD', 'MX', 'SC']
 
@@ -81,107 +117,73 @@ function catalogByName(songs: SongEntry[]): Map<string, SongEntry> {
   return map
 }
 
-/** AppData → songs.json 스타일 DrillMax.json */
-export function toDrillMaxFile(
+function finiteLevel(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
+
+/** AppData → 사용자 기록 파일. 일최고는 저장하지 않고 플레이에서 다시 만든다. */
+export function toRecordFile(
   data: AppData,
   opts?: { nickname?: string; catalog?: SongEntry[] },
-): DrillMaxFile {
+): RecordFile {
   const cat = catalogByName(opts?.catalog ?? [])
-  const playsByChart = new Map<string, Play[]>()
-  for (const p of data.plays) {
-    const list = playsByChart.get(p.chartId)
-    if (list) list.push(p)
-    else playsByChart.set(p.chartId, [p])
-  }
-  const dailyByChart = new Map<string, DailyBest[]>()
-  for (const d of data.dailyBests ?? []) {
-    const list = dailyByChart.get(d.chartId)
-    if (list) list.push(d)
-    else dailyByChart.set(d.chartId, [d])
-  }
-
-  const songMap = new Map<string, DrillMaxSong>()
-
-  for (const chart of data.charts) {
-    const key = normalizeSongKey(chart.title)
-    const meta = cat.get(key)
-    let song = songMap.get(key)
-    if (!song) {
-      song = {
-        title: meta?.title ?? null,
-        name: chart.title,
-        composer: meta?.composer ?? '',
-        dlcCode: meta?.dlcCode ?? '',
-        patterns: {},
-      }
-      songMap.set(key, song)
-    }
-
-    const plays = (playsByChart.get(chart.id) ?? [])
-      .slice()
-      .sort(
-        (a, b) =>
-          new Date(a.playedAt).getTime() - new Date(b.playedAt).getTime(),
-      )
-    const localBest =
-      plays.length > 0 ? Math.max(...plays.map((p) => p.accuracy)) : null
-    const bestPlay =
-      localBest == null
-        ? null
-        : plays.find((p) => p.accuracy === localBest) ?? null
+  const charts = data.charts.map((chart) => {
+    const meta = cat.get(normalizeSongKey(chart.title))
     const catPat = meta?.patterns?.[chart.button]?.[chart.difficulty]
-    const dailies = (dailyByChart.get(chart.id) ?? [])
-      .slice()
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .map((d) => {
-        const play = plays.find((p) => p.id === d.playId)
-        return {
-          date: d.date,
-          score: round2(d.accuracy),
-          maxCombo: play?.maxCombo,
-          status: play?.status,
-          source: play?.source,
-          updatedAt: d.updatedAt,
-        }
-      })
-
-    const bag = song.patterns[chart.button] ?? {}
-    bag[chart.difficulty] = {
-      level: catPat?.level,
-      floor: catPat?.floor ?? null,
-      floorName: catPat?.floorName ?? null,
-      score: localBest != null ? round2(localBest) : undefined,
-      maxCombo: bestPlay?.maxCombo,
-      archiveBest:
-        chart.archiveBest != null ? round2(chart.archiveBest) : undefined,
-      order: chart.order,
-      plays:
-        plays.length > 0
-          ? plays.map((p) => ({
-              id: p.id,
-              at: p.playedAt,
-              score: round2(p.accuracy),
-              maxCombo: p.maxCombo,
-              status: p.status,
-              source: p.source,
-            }))
-          : undefined,
-      dailyBests: dailies.length > 0 ? dailies : undefined,
+    const composer = chart.composer || meta?.composer || ''
+    const dlcCode = chart.dlcCode || meta?.dlcCode || ''
+    const row: RecordChart = {
+      id: chart.id,
+      titleId: chart.titleId ?? meta?.title ?? null,
+      title: chart.title,
+      button: chart.button,
+      difficulty: chart.difficulty,
+      createdAt: chart.createdAt,
     }
-    song.patterns[chart.button] = bag
-  }
+    if (composer) row.composer = composer
+    if (dlcCode) row.dlcCode = dlcCode
+    const level = chart.level ?? catPat?.level
+    if (finiteLevel(level) != null) row.level = finiteLevel(level)
+    const floor = chart.floor ?? catPat?.floor
+    if (typeof floor === 'number' && Number.isFinite(floor)) row.floor = floor
+    const floorName = chart.floorName || catPat?.floorName || ''
+    if (floorName) row.floorName = floorName
+    if (typeof chart.order === 'number') row.order = chart.order
+    if (typeof chart.archiveBest === 'number') row.archiveBest = round2(chart.archiveBest)
+    return row
+  })
+  charts.sort(
+    (a, b) =>
+      (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) ||
+      a.title.localeCompare(b.title, 'ko') ||
+      a.button.localeCompare(b.button) ||
+      a.difficulty.localeCompare(b.difficulty),
+  )
+
+  const plays = data.plays.map((play) => {
+    const row: RecordPlay = {
+      id: play.id,
+      chartId: play.chartId,
+      at: play.playedAt,
+      score: round2(play.accuracy),
+      source: play.source,
+    }
+    if (play.maxCombo) row.maxCombo = true
+    if (play.status) row.status = play.status
+    return row
+  })
+  plays.sort((a, b) => a.at.localeCompare(b.at) || a.id.localeCompare(b.id))
 
   return {
-    version: 1,
+    version: 2,
     updatedAt: new Date().toISOString(),
     nickname: opts?.nickname || undefined,
     suppressedKeys:
       data.suppressedKeys && data.suppressedKeys.length > 0
         ? data.suppressedKeys
         : undefined,
-    songs: [...songMap.values()].sort((a, b) =>
-      a.name.localeCompare(b.name, 'ko'),
-    ),
+    charts,
+    plays,
   }
 }
 
@@ -207,8 +209,17 @@ export function fromDrillMaxFile(file: DrillMaxFile): AppData {
           button,
           difficulty,
           createdAt: file.updatedAt || new Date().toISOString(),
+          titleId: typeof song.title === 'number' ? song.title : undefined,
+          composer: song.composer || undefined,
+          dlcCode: song.dlcCode || undefined,
           archiveBest: pat.archiveBest,
           order: typeof pat.order === 'number' ? pat.order : undefined,
+          level:
+            typeof pat.level === 'number' && Number.isFinite(pat.level)
+              ? pat.level
+              : undefined,
+          floor: typeof pat.floor === 'number' && Number.isFinite(pat.floor) ? pat.floor : undefined,
+          floorName: pat.floorName || undefined,
         })
 
         if (Array.isArray(pat.plays) && pat.plays.length > 0) {
@@ -282,9 +293,71 @@ export function fromDrillMaxFile(file: DrillMaxFile): AppData {
   }
 }
 
-/** 구 AppData JSON 또는 DrillMax.json 모두 수용 */
+const BUTTON_SET = new Set<string>(BUTTONS)
+const DIFF_SET = new Set<string>(DIFFS)
+
+function isButton(value: unknown): value is ButtonMode {
+  return typeof value === 'string' && BUTTON_SET.has(value)
+}
+
+function isDifficulty(value: unknown): value is Difficulty {
+  return typeof value === 'string' && DIFF_SET.has(value)
+}
+
+/** 기록 파일 v2 → AppData. 일최고는 플레이에서 다시 계산한다. */
+export function fromRecordFile(file: RecordFile): AppData {
+  const charts: Chart[] = []
+  const plays: Play[] = []
+  for (const row of file.charts ?? []) {
+    if (!row || typeof row.id !== 'string' || typeof row.title !== 'string') continue
+    if (!isButton(row.button) || !isDifficulty(row.difficulty)) continue
+    charts.push({
+      id: row.id,
+      title: row.title.trim(),
+      button: row.button,
+      difficulty: row.difficulty,
+      createdAt: row.createdAt || file.updatedAt || new Date().toISOString(),
+      titleId: typeof row.titleId === 'number' ? row.titleId : undefined,
+      composer: row.composer || undefined,
+      dlcCode: row.dlcCode || undefined,
+      order: typeof row.order === 'number' ? row.order : undefined,
+      level: finiteLevel(row.level),
+      floor: typeof row.floor === 'number' && Number.isFinite(row.floor) ? row.floor : undefined,
+      floorName: row.floorName || undefined,
+      archiveBest: typeof row.archiveBest === 'number' ? row.archiveBest : undefined,
+    })
+  }
+  const chartIds = new Set(charts.map((chart) => chart.id))
+  for (const row of file.plays ?? []) {
+    if (!row || typeof row.id !== 'string' || !chartIds.has(row.chartId)) continue
+    if (typeof row.score !== 'number' || !Number.isFinite(row.score)) continue
+    const score = round2(row.score)
+    if (isDiscardAccuracy(score)) continue
+    const source = row.source === 'manual' || row.source === 'live' || row.source === 'log' ? row.source : 'log'
+    plays.push({
+      id: row.id,
+      chartId: row.chartId,
+      accuracy: score,
+      playedAt: new Date(row.at || file.updatedAt || Date.now()).toISOString(),
+      maxCombo: row.maxCombo === true,
+      source,
+      status: row.status === '미갱신' || row.status === '성공' ? row.status : undefined,
+    })
+  }
+  return {
+    charts,
+    plays,
+    dailyBests: [],
+    suppressedKeys: Array.isArray(file.suppressedKeys) ? file.suppressedKeys : undefined,
+  }
+}
+
+/** v2 기록 파일, v1 곡 트리, 구 AppData JSON 을 모두 읽는다. */
 export function parsePersistedJson(raw: string): AppData {
-  const parsed = JSON.parse(raw) as AppData | DrillMaxFile
+  const parsed = JSON.parse(raw) as RecordFile | DrillMaxFile | AppData
+  if (parsed && typeof parsed === 'object' && (parsed as RecordFile).version === 2 && Array.isArray((parsed as RecordFile).charts)) {
+    return fromRecordFile(parsed as RecordFile)
+  }
   if (
     parsed &&
     typeof parsed === 'object' &&
@@ -307,6 +380,6 @@ export function parsePersistedJson(raw: string): AppData {
   }
 }
 
-export function stringifyDrillMax(file: DrillMaxFile): string {
+export function stringifyRecord(file: RecordFile): string {
   return JSON.stringify(file, null, 2)
 }

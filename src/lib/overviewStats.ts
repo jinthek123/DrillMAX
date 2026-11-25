@@ -1,4 +1,5 @@
 import type { AppData, ButtonMode, Chart, Play } from '../types'
+import { round2 } from './math'
 import { isPerfectPlay } from '../types'
 import { computeHighest } from './highest'
 
@@ -15,6 +16,8 @@ export interface ChartOverviewRow {
   ppCount: number
   mcCount: number
   pendingCount: number
+  /** 마지막으로 기록을 넘긴 점수 차이. 없으면 0 */
+  recordGain: number
   acc999Count: number
   acc998Count: number
 }
@@ -47,6 +50,7 @@ export function buildChartOverview(data: AppData): ChartOverviewRow[] {
     let ppCount = 0
     let mcCount = 0
     let pendingCount = 0
+    const recordGain = latestRecordGain(plays, archiveBest)
     let acc999Count = 0
     let acc998Count = 0
     for (const p of plays) {
@@ -71,10 +75,30 @@ export function buildChartOverview(data: AppData): ChartOverviewRow[] {
       ppCount,
       mcCount,
       pendingCount,
+      recordGain,
       acc999Count,
       acc998Count,
     }
   })
+}
+
+/** 아카이브 최고기록에서 시작해, 미갱신이 아닌 플레이가 기록을 넘길 때마다 차이를 남긴다. */
+function latestRecordGain(plays: Play[], archiveBest: number | null): number {
+  const ordered = plays.slice().sort((a, b) => Date.parse(a.playedAt) - Date.parse(b.playedAt))
+  let record = archiveBest
+  let gain = 0
+  for (const play of ordered) {
+    if (play.status === '미갱신') continue
+    if (record == null || !Number.isFinite(record)) {
+      record = play.accuracy
+      continue
+    }
+    if (play.accuracy > record) {
+      gain = round2(play.accuracy - record)
+      record = play.accuracy
+    }
+  }
+  return gain
 }
 
 export function summarizeOverview(rows: ChartOverviewRow[]): OverviewSummary {

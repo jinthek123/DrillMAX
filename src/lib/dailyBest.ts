@@ -4,7 +4,7 @@ import { round2 } from './math'
 
 export const DAILY_BEST_KEEP_DAYS = 30
 /** 단일 곡 그래프·목록에 남기는 최대 플레이 수 (초과 시 오래된 것부터 삭제) */
-export const PLAY_KEEP_PER_CHART = 15
+export const PLAY_KEEP_PER_CHART = 30
 
 /** 0.00% 이하는 기록으로 취급하지 않음 */
 export function isDiscardAccuracy(accuracy: number): boolean {
@@ -73,7 +73,7 @@ export function trimPlaysPerChart(
   return out
 }
 
-/** 단일 곡은 최근 15판만 남기고, Daily Best는 30일 창에 새 플레이를 반영한다. */
+/** 단일 곡은 최근 30판만 남기고, Daily Best는 30일 창에 새 플레이를 반영한다. */
 export function appendPlay(
   data: AppData,
   play: Play,
@@ -129,8 +129,8 @@ export function trimDailyBests(
 
 /**
  * 차트 삭제·정리.
- * 플레이가 있는 날은 그 플레이의 최고점, 15판 제한으로 빠진 날은 저장된 Daily Best를 유지.
- * Daily Best는 최근 30일, 단일 곡 플레이는 차트당 최근 15개.
+ * 플레이가 있는 날은 그 플레이의 최고점, 30판 제한으로 빠진 날은 저장된 Daily Best를 유지.
+ * Daily Best는 최근 30일, 단일 곡 플레이는 차트당 최근 30개.
  */
 export function sanitizeAppData(data: AppData): AppData {
   const chartIds = new Set(data.charts.map((c) => c.id))

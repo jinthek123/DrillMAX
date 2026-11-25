@@ -1,6 +1,11 @@
 import { difficultyTone } from '../lib/difficultyTone'
 import type { Difficulty } from '../types'
 
+function difficultyLabel(difficulty: string, level?: number) {
+  if (typeof level !== 'number' || !Number.isFinite(level)) return difficulty
+  return `${difficulty}${Math.trunc(level)}`
+}
+
 export function ChartBadges({
   button,
   difficulty,
@@ -19,7 +24,7 @@ export function ChartBadges({
         className="chart-badge"
         data-tone={difficultyTone(difficulty as Difficulty, level)}
       >
-        {difficulty}
+        {difficultyLabel(difficulty, level)}
       </span>
     </span>
   )

@@ -2,16 +2,11 @@ import { open } from '@tauri-apps/plugin-dialog'
 import { writeTextFile } from '@tauri-apps/plugin-fs'
 import type { AppData } from '../types'
 import { isTauri } from './bridgeUrl'
+import { joinPath } from './pathJoin'
 import { exportJson } from './storage'
 
 export function defaultBackupName(): string {
   return `drillmax-backup-${new Date().toISOString().slice(0, 10)}.json`
-}
-
-function joinPath(dir: string, file: string): string {
-  const trimmed = dir.replace(/[/\\]+$/, '')
-  const sep = trimmed.includes('\\') ? '\\' : '/'
-  return `${trimmed}${sep}${file}`
 }
 
 /** 백업 폴더 선택 (디렉터리) */

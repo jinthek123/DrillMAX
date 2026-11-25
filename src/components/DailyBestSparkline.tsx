@@ -15,6 +15,7 @@ import {
   chartAxisTick,
   chartTooltipStyle,
   formatYTick,
+  yAxisWidth,
 } from '../lib/chartScale'
 import {
   DAILY_BEST_KEEP_DAYS,
@@ -26,6 +27,7 @@ interface DailyBestSparklineProps {
   chartId: string
   dailyBests: DailyBest[] | undefined
   highest?: number | null
+  axisWidth?: number
 }
 
 function SparkDot({
@@ -54,6 +56,7 @@ function DailyBestSparklineInner({
   chartId,
   dailyBests,
   highest,
+  axisWidth,
 }: DailyBestSparklineProps) {
   const data = useMemo(
     () => dailyBestSeriesForChart(dailyBests, chartId, DAILY_BEST_KEEP_DAYS),
@@ -114,7 +117,7 @@ function DailyBestSparklineInner({
             tick={{ ...chartAxisTick, fontSize: 11 }}
             tickLine={false}
             axisLine={{ stroke: 'var(--axis)' }}
-            width={scale.fine ? 48 : 42}
+            width={axisWidth ?? yAxisWidth(scale.fine)}
           />
           <Tooltip
             contentStyle={{ ...chartTooltipStyle, fontSize: 12 }}
@@ -146,6 +149,20 @@ function DailyBestSparklineInner({
       </ResponsiveContainer>
     </div>
   )
+}
+
+export function dailySparkAxisWidth(
+  chartId: string,
+  dailyBests: DailyBest[] | undefined,
+  highest?: number | null,
+): number {
+  const data = dailyBestSeriesForChart(dailyBests, chartId, DAILY_BEST_KEEP_DAYS)
+  const vals = data
+    .map((point) => point.accuracy)
+    .filter((value): value is number => value != null)
+  if (vals.length === 0) return yAxisWidth(false)
+  const scale = buildYScale(Math.min(...vals), Math.max(...vals, highest ?? 0))
+  return yAxisWidth(scale.fine)
 }
 
 export const DailyBestSparkline = memo(DailyBestSparklineInner)

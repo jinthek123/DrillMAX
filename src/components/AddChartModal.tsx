@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ButtonMode, Difficulty } from '../types'
+import { jacketSrcForId } from '../lib/jacketSrc'
 import {
   availableButtons,
   availableDifficulties,
@@ -188,26 +189,38 @@ export function AddChartModal({
                 role="listbox"
                 ref={listRef}
               >
-                {suggestions.map((song, i) => (
-                  <li key={`${song.name}-${song.dlcCode}-${i}`} role="option">
-                    <button
-                      type="button"
-                      className={`suggest-item${i === activeIndex ? ' active' : ''}`}
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => pickSong(song)}
-                      onMouseEnter={() => setActiveIndex(i)}
-                    >
-                      <span className="suggest-name">{song.name}</span>
-                      {(song.composer || song.dlcCode) && (
-                        <span className="suggest-meta">
-                          {[song.composer, song.dlcCode]
-                            .filter(Boolean)
-                            .join(' · ')}
+                {suggestions.map((song, i) => {
+                  const jacket = jacketSrcForId(song.title)
+                  return (
+                    <li key={`${song.name}-${song.dlcCode}-${i}`} role="option">
+                      <button
+                        type="button"
+                        className={`suggest-item${i === activeIndex ? ' active' : ''}`}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => pickSong(song)}
+                        onMouseEnter={() => setActiveIndex(i)}
+                      >
+                        {jacket ? (
+                          <img
+                            className="song-jacket suggest-jacket"
+                            src={jacket}
+                            alt=""
+                          />
+                        ) : null}
+                        <span className="suggest-copy">
+                          <span className="suggest-name">{song.name}</span>
+                          {(song.composer || song.dlcCode) && (
+                            <span className="suggest-meta">
+                              {[song.composer, song.dlcCode]
+                                .filter(Boolean)
+                                .join(' · ')}
+                            </span>
+                          )}
                         </span>
-                      )}
-                    </button>
-                  </li>
-                ))}
+                      </button>
+                    </li>
+                  )
+                })}
               </ul>
             )}
           </div>

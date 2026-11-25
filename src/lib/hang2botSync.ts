@@ -1,14 +1,19 @@
-import catalog4Url from '../../../DrillMAX-dev-data/dev-data/hang2bot-4b.json?url'
-import catalog5Url from '../../../DrillMAX-dev-data/dev-data/hang2bot-5b.json?url'
-import catalog6Url from '../../../DrillMAX-dev-data/dev-data/hang2bot-6b.json?url'
-import catalog8Url from '../../../DrillMAX-dev-data/dev-data/hang2bot-8b.json?url'
+import catalog4Url from '../../../DrillMAX-dev-data/hang2bot-4b.json?url'
+import catalog5Url from '../../../DrillMAX-dev-data/hang2bot-5b.json?url'
+import catalog6Url from '../../../DrillMAX-dev-data/hang2bot-6b.json?url'
+import catalog8Url from '../../../DrillMAX-dev-data/hang2bot-8b.json?url'
 import {
+  dropHangSongs,
   focusHangCatalog,
   hangCatalog,
   hangSyncId,
   installHangCatalog,
+  publishHangJackets,
+  readSyncId,
+  releaseHangSongs,
   rememberSyncId,
 } from './hangCatalog'
+import { localDateKey } from './dates'
 import type { ButtonMode } from '../types'
 
 const BUNDLED_URL: Record<ButtonMode, string> = {
@@ -33,19 +38,12 @@ interface SyncRecord {
   status: HangSyncStatus
 }
 
-function localDay(now = new Date()) {
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const date = String(now.getDate()).padStart(2, '0')
-  return `${year}-${month}-${date}`
-}
-
 export function readHangSync(): SyncRecord | null {
   try {
     const raw = localStorage.getItem(DAY_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as SyncRecord
-    if (!parsed || parsed.day !== localDay() || !parsed.status) return null
+    if (!parsed || parsed.day !== localDateKey() || !parsed.status) return null
     return parsed
   } catch {
     return null
@@ -57,7 +55,7 @@ export function hangSyncUsedToday() {
 }
 
 function writeHangSync(status: HangSyncStatus) {
-  const record: SyncRecord = { day: localDay(), status }
+  const record: SyncRecord = { day: localDateKey(), status }
   localStorage.setItem(DAY_KEY, JSON.stringify(record))
 }
 
@@ -99,12 +97,6 @@ function asPage(value: unknown): SongPage | null {
   const page = value as { total?: unknown; songs?: unknown }
   if (typeof page.total !== 'number' || !Array.isArray(page.songs)) return null
   return { total: page.total, songs: page.songs }
-}
-
-function syncIdOf(song: unknown) {
-  if (!song || typeof song !== 'object') return ''
-  const id = (song as { sync_run_id?: unknown }).sync_run_id
-  return typeof id === 'string' ? id : ''
 }
 
 async function hangGetOnce(path: string): Promise<unknown> {
@@ -168,7 +160,7 @@ function syncStatus(updated: number, failed: number): HangSyncStatus {
 
 function parseStored(value: unknown): { syncId: string; songs: unknown[] } | null {
   if (Array.isArray(value)) {
-    const syncId = value.reduce<string>((found, song) => found || syncIdOf(song), '')
+    const syncId = value.reduce<string>((found, song) => found || readSyncId(song), '')
     return syncId ? { syncId, songs: value } : null
   }
   if (!value || typeof value !== 'object') return null
@@ -205,11 +197,11 @@ async function readStoredSyncId(button: ButtonMode): Promise<string> {
 async function refreshOne(button: number): Promise<'same' | 'updated'> {
   const mode = buttonMode(button)
   const probe = asPage(await hangGet(`/songs/${button}?page=1&limit=1`))
-  const remoteId = probe ? syncIdOf(probe.songs[0]) : ''
+  const remoteId = probe ? readSyncId(probe.songs[0]) : ''
   if (!remoteId) throw new Error('probe')
   if (remoteId === (await readStoredSyncId(mode))) return 'same'
   const songs = await downloadButton(button)
-  if (syncIdOf(songs[0]) !== remoteId) throw new Error('moved')
+  if (readSyncId(songs[0]) !== remoteId) throw new Error('moved')
   if (!installHangCatalog(mode, songs, remoteId)) throw new Error('shape')
   const stored = storedCatalog(mode)
   const db = await openDb()
@@ -218,6 +210,7 @@ async function refreshOne(button: number): Promise<'same' | 'updated'> {
   } finally {
     db.close()
   }
+  if (retainButton !== mode) dropHangSongs(mode)
   return 'updated'
 }
 
@@ -248,13 +241,24 @@ export async function refreshHangCatalogs(): Promise<HangSyncStatus> {
 
 const loading = new Map<ButtonMode, Promise<void>>()
 let retainButton: ButtonMode | null = null
+let catalogEpoch = 0
+
+/** 추천 탭을 떠나면 곡 목록을 놓는다. 진행 중이던 적재가 끝나도 다시 들고 있지 않는다. */
+export function releaseHangCatalogs() {
+  catalogEpoch += 1
+  retainButton = null
+  releaseHangSongs()
+}
 
 async function loadHangButton(button: ButtonMode): Promise<void> {
+  const epoch = catalogEpoch
+  const stillCurrent = () => epoch === catalogEpoch
   try {
     let db: IDBDatabase | null = null
     try {
       db = await openDb()
       const saved = await idbGet(db, button)
+      if (!stillCurrent()) return
       const parsed = parseStored(saved)
       if (parsed && installHangCatalog(button, parsed.songs, parsed.syncId)) {
         if (Array.isArray(saved)) {
@@ -268,18 +272,81 @@ async function loadHangButton(button: ButtonMode): Promise<void> {
     } finally {
       db?.close()
     }
+    if (!stillCurrent()) return
     try {
       const response = await fetch(BUNDLED_URL[button])
-      if (!response.ok) return
+      if (!response.ok || !stillCurrent()) return
       const data = (await response.json()) as { songs?: unknown }
-      if (!Array.isArray(data.songs)) return
+      if (!stillCurrent() || !Array.isArray(data.songs)) return
       installHangCatalog(button, data.songs)
     } catch {
       // 목록을 못 읽으면 상수 없음으로 둔다.
     }
   } finally {
-    if (retainButton) focusHangCatalog(retainButton)
+    if (stillCurrent() && retainButton) focusHangCatalog(retainButton)
   }
+}
+
+const jacketJobs = new Map<ButtonMode, Promise<void>>()
+
+/** 다른 버튼 곡 목록은 비워도, 캐러셀 뒤 카드의 자켓은 찾을 수 있게 주소만 남긴다. */
+export function indexHangJackets(button: ButtonMode): Promise<void> {
+  const pending = jacketJobs.get(button)
+  if (pending) return pending
+  const job = fillJacketIndex(button).catch(() => {
+    jacketJobs.delete(button)
+  })
+  jacketJobs.set(button, job)
+  return job
+}
+
+function jacketRows(songs: Iterable<unknown>) {
+  const rows: { pattern: string; title: string; title_jacket?: string }[] = []
+  for (const raw of songs) {
+    if (!raw || typeof raw !== 'object') continue
+    const song = raw as { title?: unknown; pattern?: unknown; title_jacket?: unknown }
+    if (typeof song.title !== 'string' || typeof song.pattern !== 'string') continue
+    if (typeof song.title_jacket !== 'string' || !song.title_jacket) continue
+    rows.push({ title: song.title, pattern: song.pattern, title_jacket: song.title_jacket })
+  }
+  return rows
+}
+
+async function fillJacketIndex(button: ButtonMode): Promise<void> {
+  const live = hangCatalog(button).songs
+  if (live.some((song) => song.title_jacket)) {
+    publishHangJackets(button, live)
+    return
+  }
+  const pending = loading.get(button)
+  if (pending) {
+    await pending
+    const loaded = hangCatalog(button).songs
+    if (loaded.some((song) => song.title_jacket)) {
+      publishHangJackets(button, loaded)
+      return
+    }
+  }
+  let storedSongs: unknown[] | null = null
+  try {
+    const db = await openDb()
+    try {
+      storedSongs = parseStored(await idbGet(db, button))?.songs ?? null
+    } finally {
+      db.close()
+    }
+  } catch {
+    storedSongs = null
+  }
+  if (storedSongs) {
+    publishHangJackets(button, jacketRows(storedSongs))
+    return
+  }
+  const response = await fetch(BUNDLED_URL[button])
+  if (!response.ok) return
+  const data = (await response.json()) as { songs?: unknown }
+  if (!Array.isArray(data.songs)) return
+  publishHangJackets(button, jacketRows(data.songs))
 }
 
 export function ensureHangCatalog(button: ButtonMode): Promise<void> {

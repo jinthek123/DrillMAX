@@ -2,9 +2,12 @@ import { ask } from '@tauri-apps/plugin-dialog'
 import { useState, type ReactNode } from 'react'
 import { isTauri } from '../lib/bridgeUrl'
 import type { ThemeMode } from '../lib/settings'
-import { findSongExact, type SongIndex } from '../lib/songCatalog'
+import { chartFloorName, chartLevel, type SongIndex } from '../lib/songCatalog'
 import type { Chart } from '../types'
+import { cardShift, useListReorder } from '../hooks/useListReorder'
 import { ChartBadges } from './ChartBadges'
+import { EMPTY_FLOOR, FloorMark } from './FloorMark'
+import { OrderHandle } from './OrderHandle'
 import { ThemeToggle } from './ThemeToggle'
 import { UpdateCheckButton } from './UpdateCheckButton'
 import { TrashIcon } from './TrashIcon'
@@ -17,6 +20,7 @@ interface SidebarProps {
   onSelect: (id: string) => void
   onAdd: () => void
   onDelete: (id: string) => void
+  onReorder: (orderedIds: string[]) => void
   onOpenApiSettings?: () => void
   theme: ThemeMode
   onThemeChange: (theme: ThemeMode) => void
@@ -31,12 +35,18 @@ export function Sidebar({
   onSelect,
   onAdd,
   onDelete,
+  onReorder,
   onOpenApiSettings,
   theme,
   onThemeChange,
   liveSlot,
 }: SidebarProps) {
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const { drag, setListNode, beginDrag, moveDrag, endDrag } = useListReorder(
+    charts.map((chart) => chart.id),
+    10,
+    onReorder,
+  )
 
   return (
     <aside className="sidebar">
@@ -68,29 +78,48 @@ export function Sidebar({
         </div>
       )}
 
-      <ul className="chart-list">
+      <ul
+        ref={setListNode}
+        className={`chart-list${drag ? ' is-reordering' : ''}`}
+      >
         {charts.length === 0 && (
           <li className="chart-empty">아직 차트가 없습니다</li>
         )}
-        {charts.map((c) => {
+        {charts.map((c, index) => {
           const active = c.id === selectedId
+          const lifted = drag?.id === c.id
+          const sliding = drag != null && drag.id !== c.id
           return (
-            <li key={c.id}>
+            <li
+              key={c.id}
+              data-chart-id={c.id}
+              className={`${lifted ? 'is-lifted' : ''}${sliding ? ' is-shifting' : ''}`}
+              style={
+                lifted || sliding
+                  ? { transform: `translateY(${cardShift(index, drag)}px)` }
+                  : undefined
+              }
+            >
               <div className={`chart-item${active ? ' active' : ''}`}>
+                <OrderHandle
+                  onPointerDown={(event) => beginDrag(event, c.id)}
+                  onPointerMove={moveDrag}
+                  onPointerUp={() => endDrag(true)}
+                  onPointerCancel={() => endDrag(false)}
+                />
                 <button
                   type="button"
                   className="chart-item-main"
                   onClick={() => onSelect(c.id)}
                 >
-                  <ChartBadges
-                    button={c.button}
-                    difficulty={c.difficulty}
-                    level={
-                      findSongExact(songIndex, c.title)?.patterns[c.button]?.[
-                        c.difficulty
-                      ]?.level
-                    }
-                  />
+                  <span className="chart-item-marks">
+                    <ChartBadges
+                      button={c.button}
+                      difficulty={c.difficulty}
+                      level={chartLevel(songIndex, c)}
+                    />
+                    <FloorMark floorName={chartFloorName(songIndex, c) || EMPTY_FLOOR} />
+                  </span>
                   <span className="chart-item-label">{c.title}</span>
                   <span className="chart-item-meta">
                     {playCounts[c.id] ?? 0}회

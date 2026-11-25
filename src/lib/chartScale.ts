@@ -50,6 +50,11 @@ export function formatYTick(v: number, fine: boolean): string {
   return fine || v >= 99.9 ? v.toFixed(2) : v.toFixed(1)
 }
 
+/** 왼쪽 Y축이 차트 안에서 차지하는 너비. 헤더 자켓 열과 맞춘다. */
+export function yAxisWidth(fine: boolean): number {
+  return fine ? 48 : 42
+}
+
 export const chartTooltipStyle: CSSProperties = {
   background: 'var(--panel)',
   border: '1px solid var(--border)',

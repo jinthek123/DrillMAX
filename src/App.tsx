@@ -1,11 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  archiveKey,
-  fetchAllArchiveBests,
-  lookupBest,
-  resolveArchiveBest,
-  type ArchiveBestMap,
-} from './lib/archiveApi'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { lookupBest } from './lib/archiveApi'
 import { shouldFetchArchiveBest } from './lib/archiveRefresh'
 import { compareChartOrder } from './lib/chartIdentity'
 import { AddChartModal } from './components/AddChartModal'
@@ -26,13 +20,13 @@ import {
   type ThemeMode,
 } from './lib/settings'
 import { pickBackupDir } from './lib/backup'
-import {
-  loadDrillMaxFile,
-  scheduleAutoPersist,
-} from './lib/autoPersist'
+import { scheduleAutoPersist } from './lib/autoPersist'
 import { useAppData } from './hooks/useAppData'
+import { useArchiveBests } from './hooks/useArchiveBests'
 import { useLiveBridge } from './hooks/useLiveBridge'
+import { useRecordFile } from './hooks/useRecordFile'
 import { useSongCatalog } from './hooks/useSongCatalog'
+import { chartFloorName, chartLevel } from './lib/songCatalog'
 import type { LiveBridgeEvent } from './types'
 import './App.css'
 
@@ -68,26 +62,15 @@ export default function App() {
   const [liveEnabled, setLiveEnabled] = useState(true)
   const [recording, setRecording] = useState(false)
   const [activeTab, setActiveTab] = useState<AppTabId>('overview')
-  const [hydrated, setHydrated] = useState(false)
-  const archiveBestsRef = useRef<ArchiveBestMap | null>(null)
-  const archivePendingRef = useRef(new Set<string>())
-
-  // Tauri: drillMax.json 자동 로드
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      const fromFile = await loadDrillMaxFile(settings.backupDir || undefined)
-      if (!cancelled && fromFile && (fromFile.charts.length > 0 || fromFile.plays.length > 0)) {
-        replaceAll(fromFile)
-      }
-      if (!cancelled) setHydrated(true)
-    })()
-    return () => {
-      cancelled = true
-    }
-    // 최초 1회 + 폴더 변경 시
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.backupDir])
+  const hydrated = useRecordFile(settings.backupDir, replaceAll)
+  const { archiveBestsRef, archivePendingRef, syncArchiveBests, refreshArchiveBest } =
+    useArchiveBests({
+      setupDone: settings.setupDone,
+      apiToken: settings.apiToken,
+      nickname: settings.nickname,
+      setArchiveBest,
+      applyArchiveBests,
+    })
 
   // Tauri: drillMax.json 자동 저장 (songs.json 정렬 레이블)
   useEffect(() => {
@@ -98,6 +81,11 @@ export default function App() {
       catalog: songs,
     })
   }, [data, settings.backupDir, settings.nickname, songs, hydrated])
+
+  const openBackup = useCallback(() => {
+    setBackupMsg(null)
+    setBackupOpen(true)
+  }, [])
 
   const openChartTab = useCallback(
     (id: string) => {
@@ -119,63 +107,9 @@ export default function App() {
     })
   }, [])
 
-  const syncArchiveBests = useCallback(
-    async (apiToken: string, nickname: string) => {
-      const { nickname: resolved, bests } = await fetchAllArchiveBests({
-        token: apiToken,
-        nickname: nickname || undefined,
-      })
-      archiveBestsRef.current = bests
-      applyArchiveBests(bests)
-      return resolved
-    },
-    [applyArchiveBests],
-  )
-
-  useEffect(() => {
-    if (!settings.setupDone || !settings.apiToken) return
-    void syncArchiveBests(settings.apiToken, settings.nickname).catch(() => {
-      /* 네트워크 실패 시 다음 저장/재시도에서 처리 */
-    })
-  }, [settings.setupDone, settings.apiToken, settings.nickname, syncArchiveBests])
-
   const knownTitles = useMemo(
     () => [...new Set(data.charts.map((c) => c.title))],
     [data.charts],
-  )
-
-  /** 네트워크로 해당 곡 PB 조회·반영 (캐시 즉시 반영 후 API 갱신) */
-  const refreshArchiveBest = useCallback(
-    (
-      chartId: string,
-      title: string,
-      button: LiveBridgeEvent['button'],
-      difficulty: LiveBridgeEvent['difficulty'],
-      nickname?: string | null,
-    ) => {
-      const cached = lookupBest(
-        archiveBestsRef.current,
-        button,
-        difficulty,
-        title,
-      )
-      if (cached != null) setArchiveBest(chartId, cached)
-
-      return (async () => {
-        const best = await resolveArchiveBest(
-          title,
-          button,
-          difficulty,
-          nickname || settings.nickname,
-        )
-        if (best == null) return
-        setArchiveBest(chartId, best)
-        const map = archiveBestsRef.current ?? new Map()
-        map.set(archiveKey(button, difficulty, title), best)
-        archiveBestsRef.current = map
-      })()
-    },
-    [setArchiveBest, settings.nickname],
   )
 
   const onLiveEvent = useCallback(
@@ -231,9 +165,10 @@ export default function App() {
         songIndex={songIndex}
         selectedId={selectedId}
         playCounts={playCounts}
-        onSelect={openChartTab}
+        onSelect={setSelectedId}
         onAdd={() => setAddOpen(true)}
         onDelete={deleteChart}
+        onReorder={reorderCharts}
         onOpenApiSettings={() => setApiSetupOpen(true)}
         theme={settings.theme}
         onThemeChange={setTheme}
@@ -259,18 +194,19 @@ export default function App() {
         {activeTab === 'overview' && (
           <OverviewPanel
             data={data}
+            songIndex={songIndex}
             onOpenChart={openChartTab}
+            selectedId={selectedId}
             onOpenImport={() => setImportOpen(true)}
-            onExport={() => {
-              setBackupMsg(null)
-              setBackupOpen(true)
-            }}
+            onExport={openBackup}
             onReorder={reorderCharts}
           />
         )}
         {activeTab === 'chart' && (
           <PlayPanel
             chart={selectedChart}
+            level={selectedChart ? chartLevel(songIndex, selectedChart) : undefined}
+            floorName={selectedChart ? chartFloorName(songIndex, selectedChart) : undefined}
             plays={selectedPlays}
             highest={highest}
             latestPlay={latestPlay}
@@ -283,10 +219,7 @@ export default function App() {
             }}
             onDeletePlay={deletePlay}
             onOpenImport={() => setImportOpen(true)}
-            onExport={() => {
-              setBackupMsg(null)
-              setBackupOpen(true)
-            }}
+            onExport={openBackup}
             onImportJson={(file) => {
               const reader = new FileReader()
               reader.onload = () => {

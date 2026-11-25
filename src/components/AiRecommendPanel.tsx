@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { recommendForChart } from '../lib/elixirRecommend'
 import { focusHangCatalog } from '../lib/hangCatalog'
-import { ensureHangCatalog } from '../lib/hang2botSync'
+import { ensureHangCatalog, indexHangJackets, releaseHangCatalogs } from '../lib/hang2botSync'
 import type { Chart } from '../types'
 import { Hang2botName } from './Hang2botName'
 import { HangSyncFooter, useHangCatalogVersion } from './recommend/HangSyncFooter'
@@ -27,6 +27,22 @@ export function AiRecommendPanel({
   const rolls =
     rollState.id === chartId ? rollState : { id: chartId, picks: 0, rests: 0 }
   const catalogReady = chart != null && loadedButton === chart.button
+
+  useEffect(() => {
+    let cancel = false
+    const buttons = [...new Set(charts.map((item) => item.button))]
+    void (async () => {
+      for (const button of buttons) {
+        if (cancel) return
+        await indexHangJackets(button)
+      }
+    })()
+    return () => {
+      cancel = true
+    }
+  }, [charts])
+
+  useEffect(() => releaseHangCatalogs, [])
 
   useEffect(() => {
     if (!chart) return

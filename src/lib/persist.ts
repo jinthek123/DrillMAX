@@ -1,8 +1,8 @@
 import { normalizeAppData } from './dailyBest'
 import {
   parsePersistedJson,
-  stringifyDrillMax,
-  toDrillMaxFile,
+  stringifyRecord,
+  toRecordFile,
 } from './drillMaxJson'
 import type { SongEntry } from './songCatalog'
 import type { AppData } from '../types'
@@ -12,10 +12,10 @@ export function readAppDataJson(raw: string): AppData {
   return normalizeAppData(parsePersistedJson(raw))
 }
 
-/** AppData → drillMax.json 문자열 */
+/** AppData → 기록 파일 v2 문자열 */
 export function writeAppDataJson(
   data: AppData,
   opts?: { nickname?: string; catalog?: SongEntry[] },
 ): string {
-  return stringifyDrillMax(toDrillMaxFile(data, opts))
+  return stringifyRecord(toRecordFile(data, opts))
 }

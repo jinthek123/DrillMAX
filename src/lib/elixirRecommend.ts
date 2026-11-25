@@ -19,6 +19,7 @@ export interface RecommendPick {
   level?: number
   floorName: string
   floorDelta: number
+  titleJacket?: string
   sharedTags: TagChip[]
   tags: TagChip[]
 }
@@ -29,6 +30,7 @@ export interface ElixirRecommendation {
   pattern: string
   level?: number
   floorName: string
+  titleJacket?: string
   tags: TagChip[]
   picks: RecommendPick[]
   rests: RecommendPick[]
@@ -69,13 +71,12 @@ const TAG3_FLOOR_WORTH = 2
 const COSINE_WEIGHT = 0.45
 
 /** 서로 상수 3인 태그 개수. 1·2와 깨진 큰 숫자는 넣지 않는다. */
-function highTagLink(seed: Map<string, number>, other: Map<string, number>): number {
-  let link = 0
+function sharedTag3Count(seed: Map<string, number>, other: Map<string, number>): number {
+  let count = 0
   for (const [name, score] of seed) {
-    if (score !== 3 || other.get(name) !== 3) continue
-    link += score * 3
+    if (score === 3 && other.get(name) === 3) count += 1
   }
-  return link
+  return count
 }
 
 /**
@@ -84,8 +85,7 @@ function highTagLink(seed: Map<string, number>, other: Map<string, number>): num
  * 유사도는 그 차이를 뒤집지 못할 만큼만 더한다.
  */
 function recommendFit(row: RankedSong): number {
-  const sharedThrees = row.highLink / 9
-  return sharedThrees * TAG3_FLOOR_WORTH + row.score * COSINE_WEIGHT - Math.abs(row.floorDelta)
+  return row.sharedTag3 * TAG3_FLOOR_WORTH + row.score * COSINE_WEIGHT - Math.abs(row.floorDelta)
 }
 
 function sharedTags(seed: Map<string, number>, other: Map<string, number>): TagChip[] {
@@ -101,7 +101,7 @@ interface RankedSong {
   song: HangSong
   tags: Map<string, number>
   score: number
-  highLink: number
+  sharedTag3: number
   floorDelta: number
 }
 
@@ -147,7 +147,7 @@ function rankSongs(songs: HangSong[], seed: HangSong, seedTags: Map<string, numb
         song,
         tags,
         score: similarity(seedTags, tags),
-        highLink: highTagLink(seedTags, tags),
+        sharedTag3: sharedTag3Count(seedTags, tags),
         floorDelta: song.floor - seed.floor,
       }
     })
@@ -160,6 +160,7 @@ function toPick(seedTags: Map<string, number>, row: RankedSong): RecommendPick {
     level: row.song.level,
     floorName: row.song.floorName,
     floorDelta: row.floorDelta,
+    titleJacket: row.song.title_jacket,
     sharedTags: sharedTags(seedTags, row.tags),
     tags: chips(row.tags),
   }
@@ -250,6 +251,7 @@ export function recommendForChart(
     pattern: seedSong.pattern,
     level: seedSong.level,
     floorName: seedSong.floorName,
+    titleJacket: seedSong.title_jacket,
     tags: chips(seedTags),
     picks: picks.map((row) => toPick(seedTags, row)),
     rests: rests.map((row) => toPick(seedTags, row)),

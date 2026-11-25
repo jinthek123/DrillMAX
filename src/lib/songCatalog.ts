@@ -2,6 +2,8 @@ import { archiveUrl } from './bridgeUrl'
 import type { ButtonMode, Difficulty } from '../types'
 const CACHE_KEY = 'drillmax-song-catalog-v1'
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7 // 7일
+const BUTTONS: ButtonMode[] = ['4B', '5B', '6B', '8B']
+const DIFFS: Difficulty[] = ['NM', 'HD', 'MX', 'SC']
 
 export interface SongPatternMeta {
   level?: number
@@ -35,6 +37,51 @@ export interface SongIndex {
 }
 
 let memoryPayload: CachePayload | null = null
+let cacheNeedsRewrite = false
+
+function slimMeta(value: unknown): SongPatternMeta | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const row = value as Record<string, unknown>
+  const meta: SongPatternMeta = {}
+  if (typeof row.level === 'number' && Number.isFinite(row.level)) meta.level = row.level
+  if (typeof row.floor === 'number' && Number.isFinite(row.floor)) meta.floor = row.floor
+  else if (row.floor === null) meta.floor = null
+  if (typeof row.floorName === 'string') meta.floorName = row.floorName
+  else if (row.floorName === null) meta.floorName = null
+  if (meta.level == null && meta.floor == null && meta.floorName == null) return undefined
+  return meta
+}
+
+/** 자동완성과 배지에 쓰는 칸만 남긴다. rating·standard·tags 는 메모리에 두지 않는다. */
+function slimPatterns(value: unknown): SongEntry['patterns'] {
+  const patterns: SongEntry['patterns'] = {}
+  if (!value || typeof value !== 'object') return patterns
+  const raw = value as Record<string, unknown>
+  for (const button of BUTTONS) {
+    const bag = raw[button]
+    if (!bag || typeof bag !== 'object') continue
+    const next: Partial<Record<Difficulty, SongPatternMeta>> = {}
+    for (const diff of DIFFS) {
+      const meta = slimMeta((bag as Record<string, unknown>)[diff])
+      if (meta) next[diff] = meta
+    }
+    if (Object.keys(next).length > 0) patterns[button] = next
+  }
+  return patterns
+}
+
+function songsAreFat(songs: SongEntry[]): boolean {
+  for (const song of songs) {
+    for (const bag of Object.values(song.patterns)) {
+      if (!bag) continue
+      for (const meta of Object.values(bag)) {
+        if (!meta || typeof meta !== 'object') continue
+        if ('rating' in meta || 'standard' in meta || 'tags' in meta) return true
+      }
+    }
+  }
+  return false
+}
 
 function readCache(): CachePayload | null {
   if (memoryPayload) return memoryPayload
@@ -56,7 +103,23 @@ function rememberCache(payload: CachePayload) {
 }
 
 export function loadCachedSongs(): SongEntry[] {
-  return readCache()?.songs ?? []
+  const parsed = readCache()
+  if (!parsed) return []
+  if (!songsAreFat(parsed.songs)) return parsed.songs
+  const songs = parsed.songs.map((song) => ({
+    ...song,
+    patterns: slimPatterns(song.patterns),
+  }))
+  memoryPayload = { fetchedAt: parsed.fetchedAt, songs }
+  cacheNeedsRewrite = true
+  return songs
+}
+
+/** 화면을 그린 뒤에 호출한다. 렌더 중에 localStorage 를 다시 쓰지 않는다. */
+export function rewriteSlimSongCache() {
+  if (!cacheNeedsRewrite || !memoryPayload) return
+  cacheNeedsRewrite = false
+  rememberCache(memoryPayload)
 }
 
 export function isCacheFresh(): boolean {
@@ -94,7 +157,7 @@ export async function fetchSongCatalog(): Promise<SongEntry[]> {
       name: s.name!.trim(),
       composer: (s.composer ?? '').trim(),
       dlcCode: (s.dlcCode ?? '').trim(),
-      patterns: s.patterns ?? {},
+      patterns: slimPatterns(s.patterns),
     }))
 
   rememberCache({ fetchedAt: Date.now(), songs })
@@ -121,6 +184,31 @@ export function findSongExact(
   title: string,
 ): SongEntry | undefined {
   return index.byName.get(normalizeSongKey(title))
+}
+
+export function chartPattern(
+  index: SongIndex,
+  chart: { title: string; button: ButtonMode; difficulty: Difficulty },
+): SongPatternMeta | undefined {
+  return findSongExact(index, chart.title)?.patterns[chart.button]?.[chart.difficulty]
+}
+
+type ChartFacts = {
+  title: string
+  button: ButtonMode
+  difficulty: Difficulty
+  level?: number
+  floorName?: string
+}
+
+/** 기록에 있는 레벨을 쓰고, 없으면 곡 목록에서 찾는다. */
+export function chartLevel(index: SongIndex, chart: ChartFacts): number | undefined {
+  return chart.level ?? chartPattern(index, chart)?.level
+}
+
+/** 기록에 있는 층 이름을 쓰고, 없으면 곡 목록에서 찾는다. */
+export function chartFloorName(index: SongIndex, chart: ChartFacts): string | undefined {
+  return chart.floorName || chartPattern(index, chart)?.floorName || undefined
 }
 
 /** 부분 일치 + 시작 일치 우선 정렬. 이름 정규화는 인덱스를 만들 때 한 번만 한다. */

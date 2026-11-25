@@ -8,7 +8,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows" alt="Windows" />
-  <img src="https://img.shields.io/badge/Version-1.2.0-5865F2?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-1.2.1-5865F2?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square" alt="GPL-3.0" />
   <img src="https://img.shields.io/badge/Game-DJMAX%20RESPECT%20V-orange?style=flat-square" alt="DJMAX RESPECT V" />
 </p>
@@ -71,8 +71,8 @@ V-ARCHIVE 클라이언트에 표시되는 로그를 읽어 공식 최고기록 �
 ## 🚀 Download
 
 <p align="center">
-  <a href="https://github.com/jinthek123/DrillMAX/releases/tag/v1.2.0">
-    <img src="https://img.shields.io/badge/Download-DrillMAX%201.2.0-5865F2?style=for-the-badge&logo=windows" alt="Download DrillMAX" />
+  <a href="https://github.com/jinthek123/DrillMAX/releases/tag/v1.2.1">
+    <img src="https://img.shields.io/badge/Download-DrillMAX%201.2.1-5865F2?style=for-the-badge&logo=windows" alt="Download DrillMAX" />
   </a>
 </p>
 
@@ -80,7 +80,7 @@ V-ARCHIVE 클라이언트에 표시되는 로그를 읽어 공식 최고기록 �
 |:--|:--|
 | OS | Windows 10 / 11 |
 | Runtime | Microsoft WebView2 |
-| Installer | `DrillMAX_1.2.0_x64-setup.exe` |
+| Installer | `DrillMAX_1.2.1_x64-setup.exe` |
 
 > WebView2는 대부분의 Windows 환경에 기본 포함되어 있습니다.
 
@@ -144,7 +144,7 @@ ON 상태에서는 캡처 및 업로드 직후 로그에 기록되는 `[미갱�
 
 곡 이름, 버튼, 패턴을 선택하여 추적할 채보를 등록합니다.
 
-곡 이름은 검색할 수 있으며, LIVE가 활성화되어 있다면 로그에서 새로운 곡을 감지할 때 자동으로 차트가 추가됩니다.
+곡 이름은 검색할 수 있고, 검색 결과에는 자켓이 이름 왼쪽에 붙습니다. LIVE가 활성화되어 있다면 로그에서 새로운 곡을 감지할 때 자동으로 차트가 추가됩니다.
 
 #### API Key
 
@@ -164,7 +164,7 @@ V-ARCHIVE 마이페이지에서 발급받은 Open API 조회 토큰을 등록합
 
 ### 2. Performance Overview
 
-등록한 모든 채보의 플레이 성과를 한 화면에서 확인합니다.
+등록한 모든 채보의 플레이 성과를 한 화면에서 확인합니다. 카드에는 자켓이 있습니다.
 
 #### Performance Statistics
 
@@ -198,14 +198,17 @@ V-ARCHIVE 마이페이지에서 발급받은 Open API 조회 토큰을 등록합
 입력한 문자열이 포함된 곡만 표시합니다.
 
 **정렬 기준**
-- 내 순서
+- 사용자 지정 순서
+- 대시보드 순서
 - 최근 플레이
 - 가장 오래된 플레이
 - 플레이 많은 순
 - 미갱신 많은 순
+- 기록 갱신 폭 높은 순
+- 기록 갱신 폭 낮은 순
 - 이름순
 
-카드 왼쪽 손잡이를 드래그하면 직접 순서를 변경할 수 있습니다. 변경된 순서는 저장되며 사이드바의 곡 목록에도 반영됩니다.
+카드나 왼쪽 목록의 손잡이를 끌면 다른 칸이 밀려나고, 목록 끝에서 계속 끌면 그 방향으로 더 스크롤됩니다. 대시보드 순서로 보고 있을 때 옮기면 그 정렬이 유지되고, 다른 정렬에서 옮기면 사용자 지정 순서로 바뀝니다. 놓은 자리는 저장됩니다.
 
 #### Import Log
 
@@ -225,7 +228,7 @@ V-ARCHIVE 로그 텍스트를 붙여 넣어 과거 플레이를 가져올 수 �
 
 ### 3. Single Chart Analysis
 
-개별 채보를 선택해 플레이 이력과 정확도 변화를 자세히 분석합니다.
+전체 성과 카드를 열면 이 화면으로 이동합니다. 왼쪽 목록에서 곡을 고르면 현재 탭을 유지한 채 그 곡으로 옮깁니다. 전체 성과에서는 해당 카드로 이동하고, 행이봇에서는 그 곡이 가운데로 옵니다. 긴 제목은 한 줄에 맞춰 줄어듭니다.
 
 #### Record Indicators
 
@@ -245,7 +248,7 @@ V-ARCHIVE 로그 텍스트를 붙여 넣어 과거 플레이를 가져올 수 �
 - 별은 LIVE 또는 로그로 수집된 플레이에만 표시됩니다.
 
 **기록 보존 정책**
-- 개별 채보의 플레이 기록: 최근 15판
+- 개별 채보의 플레이 기록: 최근 30판
 - 일일 최고기록: 최근 30일
 
 ---
@@ -300,7 +303,7 @@ V-ARCHIVE 로그 텍스트를 붙여 넣어 과거 플레이를 가져올 수 �
 
 DrillMAX는 모든 플레이 기록을 `drillMax.json`에 저장합니다.
 
-이 파일은 V-ARCHIVE의 곡 목록과 유사한 구조에 DrillMAX 전용 플레이 데이터를 추가한 형식입니다.
+저장 형식은 `2`입니다. 채보 목록과 플레이 목록을 따로 두고, 일일 최고와 로컬 최고는 플레이에서 다시 계산합니다. 형식 1 파일도 읽으며, 다음 저장부터 형식 2로 바뀝니다. 1.2.0은 형식 2 파일을 읽지 못합니다.
 
 ### Storage Location
 
@@ -320,11 +323,12 @@ data/drillMax.json
 
 | Field | Description |
 |:--|:--|
-| `version` | 저장 형식 버전. 현재 `1` |
+| `version` | 저장 형식 버전. 현재 `2` |
 | `updatedAt` | 마지막 저장 시각 (UTC) |
 | `nickname` | V-ARCHIVE 닉네임 |
 | `suppressedKeys` | 삭제한 플레이의 중복 수집 방지 지문 |
-| `songs` | 곡 데이터 배열 |
+| `charts` | 채보 목록 |
+| `plays` | 플레이 목록. 채보의 `id`로 연결 |
 
 `suppressedKeys`는 다음 형식의 문자열을 사용합니다.
 
@@ -334,57 +338,39 @@ data/drillMax.json
 
 삭제한 플레이가 LIVE 로그를 통해 다시 추가되는 것을 방지하기 위한 식별자이며, 실제 성적 목록은 아닙니다.
 
-#### Song Fields
+#### Chart Fields
 
-`songs` 배열의 각 요소는 하나의 곡을 나타냅니다.
-
-| Field | Description |
-|:--|:--|
-| `title` | V-ARCHIVE 곡 번호. 모르는 경우 `null` |
-| `name` | 곡 이름 |
-| `composer` | 작곡가 |
-| `dlcCode` | DLC 코드 |
-| `patterns` | 버튼 및 난이도별 채보 데이터 |
-
-#### Pattern Fields
-
-`patterns`는 버튼과 난이도별로 구분됩니다.
-
-```text
-patterns
- ├─ 4B
- │   ├─ NM
- │   ├─ HD
- │   ├─ MX
- │   └─ SC
- ├─ 5B
- ├─ 6B
- └─ 8B
-```
+`charts` 배열의 각 요소는 채보 하나입니다.
 
 | Field | Description |
 |:--|:--|
-| `level` | 채보 레벨 |
-| `floor` | 내부 정수형 플로어 |
-| `floorName` | 화면에 표시할 플로어 문자열 |
-| `score` | 저장된 플레이 중 최고 정확도 |
+| `id` | 채보 식별자. `rf:버튼\|난이도\|곡 이름` |
+| `titleId` | V-ARCHIVE 곡 번호. 모르는 경우 `null` |
+| `title` | 곡 이름 |
+| `composer` | 작곡가. 없으면 생략 |
+| `dlcCode` | DLC 코드. 없으면 생략 |
+| `button` | `4B` `5B` `6B` `8B` |
+| `difficulty` | `NM` `HD` `MX` `SC` |
+| `level`, `floor`, `floorName` | 채보 레벨과 상수. 없는 값은 생략 |
 | `archiveBest` | V-ARCHIVE 최고기록 (HR) |
-| `maxCombo` | 대표 기록이 Max Combo인지 여부 |
-| `plays` | 개별 플레이 기록. 최근 15판 |
-| `dailyBests` | 날짜별 최고기록. 최근 30일 |
 | `order` | 사용자가 지정한 정렬 순서. 작을수록 위쪽 |
+| `createdAt` | 이 채보를 넣은 시각 |
+
+로컬 최고와 일일 최고는 파일에 두지 않습니다. 화면은 `plays`에서 다시 계산합니다.
 
 #### Play Fields
 
 | Field | Description |
 |:--|:--|
+| `id` | 플레이 식별자 |
+| `chartId` | 연결된 채보의 `id` |
 | `at` | 플레이 시각 |
 | `score` | 플레이 정확도 |
 | `status` | `미갱신` 또는 `성공` |
 | `source` | `live`, `log`, `manual` |
 | `maxCombo` | Max Combo 여부. 해당하는 경우에만 존재 |
 
-`0.00%` 플레이는 저장하지 않습니다.
+한 채보의 플레이는 최근 30판까지 남고, `0.00%` 플레이는 저장하지 않습니다.
 
 ### Example JSON
 
@@ -392,52 +378,42 @@ patterns
 
 ```json
 {
-  "version": 1,
-  "updatedAt": "2026-11-12T10:41:00.000Z",
+  "version": 2,
+  "updatedAt": "2026-11-25T00:00:00.000Z",
   "nickname": "player",
   "suppressedKeys": [
     "4B|SC|Example|99.5|12:00:00"
   ],
-  "songs": [
+  "charts": [
     {
-      "title": 1,
-      "name": "Example",
+      "id": "rf:4B|SC|Example",
+      "titleId": 1,
+      "title": "Example",
       "composer": "Composer",
       "dlcCode": "T1",
-      "patterns": {
-        "4B": {
-          "SC": {
-            "order": 0,
-            "level": 10,
-            "floor": 105,
-            "floorName": "10.5",
-            "score": 99.1,
-            "archiveBest": 99.5,
-            "plays": [
-              {
-                "at": "2026-11-12T03:00:00.000Z",
-                "score": 99.1,
-                "status": "미갱신",
-                "source": "live"
-              }
-            ],
-            "dailyBests": [
-              {
-                "date": "2026-11-12",
-                "score": 99.1,
-                "status": "미갱신",
-                "source": "live"
-              }
-            ]
-          }
-        }
-      }
+      "button": "4B",
+      "difficulty": "SC",
+      "level": 10,
+      "floorName": "10.5",
+      "order": 0,
+      "archiveBest": 99.5,
+      "createdAt": "2026-11-25T00:00:00.000Z"
+    }
+  ],
+  "plays": [
+    {
+      "id": "play-1",
+      "chartId": "rf:4B|SC|Example",
+      "at": "2026-11-25T00:00:00.000Z",
+      "score": 99.1,
+      "status": "미갱신",
+      "source": "live"
     }
   ]
 }
 ```
 
-> **Note:** `drillMax.json`은 V-ARCHIVE에 직접 가져와 기록을 복원하는 형식이 아닙니다. 곡 이름, 버튼, 난이도, 정확도는 같은 의미로 사용하지만 플레이 시각과 일일 최고기록은 DrillMAX에서만 관리합니다.
+> **Note:** `drillMax.json`은 V-ARCHIVE에 직접 가져와 기록을 복원하는 형식이 아닙니다. 곡 이름, 버튼, 난이도, 정확도는 같은 의미로 사용하지만 플레이 시각은 DrillMAX에서만 관리합니다.
 
 ⚠️ **Privacy Notice**
 
