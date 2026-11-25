@@ -8,7 +8,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Platform-Windows-0078D6?style=flat-square&logo=windows" alt="Windows" />
-  <img src="https://img.shields.io/badge/Version-1.2.1-5865F2?style=flat-square" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-1.2.2-5865F2?style=flat-square" alt="Version" />
   <img src="https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square" alt="GPL-3.0" />
   <img src="https://img.shields.io/badge/Game-DJMAX%20RESPECT%20V-orange?style=flat-square" alt="DJMAX RESPECT V" />
 </p>
@@ -71,8 +71,8 @@ V-ARCHIVE 클라이언트에 표시되는 로그를 읽어 공식 최고기록 �
 ## 🚀 Download
 
 <p align="center">
-  <a href="https://github.com/jinthek123/DrillMAX/releases/tag/v1.2.1">
-    <img src="https://img.shields.io/badge/Download-DrillMAX%201.2.1-5865F2?style=for-the-badge&logo=windows" alt="Download DrillMAX" />
+  <a href="https://github.com/jinthek123/DrillMAX/releases/tag/v1.2.2">
+    <img src="https://img.shields.io/badge/Download-DrillMAX%201.2.2-5865F2?style=for-the-badge&logo=windows" alt="Download DrillMAX" />
   </a>
 </p>
 
@@ -80,7 +80,7 @@ V-ARCHIVE 클라이언트에 표시되는 로그를 읽어 공식 최고기록 �
 |:--|:--|
 | OS | Windows 10 / 11 |
 | Runtime | Microsoft WebView2 |
-| Installer | `DrillMAX_1.2.1_x64-setup.exe` |
+| Installer | `DrillMAX_1.2.2_x64-setup.exe` |
 
 > WebView2는 대부분의 Windows 환경에 기본 포함되어 있습니다.
 

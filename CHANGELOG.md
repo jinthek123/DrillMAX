@@ -2,6 +2,14 @@
 
 설치본과 소스의 변경입니다. 사용 방법은 [README](./README.md)에 있습니다.
 
+## 1.2.2 — 2026-11-25
+
+설치본은 [v1.2.2](https://github.com/jinthek123/DrillMAX/releases/tag/v1.2.2)의 `DrillMAX_1.2.2_x64-setup.exe`입니다.
+
+### 업데이트
+
+- 이미 1.2.1로 설치되어 있던 앱은 같은 번호의 릴리스를 최신으로 봐서 설치 파일을 받지 못했습니다. 1.2.2로 올려 Update 확인이 새 설치본을 받게 했습니다.
+
 ## 1.2.1 — 2026-11-25
 
 설치본은 [v1.2.1](https://github.com/jinthek123/DrillMAX/releases/tag/v1.2.1)의 `DrillMAX_1.2.1_x64-setup.exe`입니다.
