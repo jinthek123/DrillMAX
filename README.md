@@ -36,19 +36,20 @@ V-ARCHIVE 클라이언트에 표시되는 로그를 읽어 공식 최고기록 �
 ### Screenshots
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/9e0e4a5e-b198-40d5-95a6-0aaeff6610d3" width="100%" alt="DrillMAX Overview" />
+  <img width="2560" height="1390" alt="image" src="https://github.com/user-attachments/assets/e803bd3e-d82d-4e1a-acc2-c820e028d754" />
+
   <br />
   <sub>Overview · 전체 성과</sub>
 </p>
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/e5eecdb8-ed24-4d9d-86fc-0e61cdad594f" width="100%" alt="DrillMAX Chart Detail" />
+  <img width="2560" height="1390" alt="image" src="https://github.com/user-attachments/assets/f96d3bc3-79d8-44ef-adf3-8c66ec55dd00" />
   <br />
   <sub>Chart Detail · 단일 곡 기록</sub>
 </p>
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/a96cce5e-2d0d-479f-9bee-a8548217eab3" width="100%" alt="DrillMAX Hang2bot Integration" />
+  <img width="2560" height="1390" alt="image" src="https://github.com/user-attachments/assets/7455ba38-2074-4244-99f6-b0b4cc528753" />
   <br />
   <sub>Hang2bot Integration · 추천곡 및 쉬는곡</sub>
 </p>
