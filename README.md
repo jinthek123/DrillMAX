@@ -1,4 +1,4 @@
-# 🎯 DrillMAX
+# DrillMAX
 
 <p align="center">
   <strong>한 곡을 깎는 과정, 그 순간의 폼을 기록하다.</strong>
